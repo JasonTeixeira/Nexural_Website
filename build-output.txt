@@ -1,0 +1,39 @@
+
+> nexural-trading@0.1.0 build
+> next build
+
+  ▲ Next.js 14.2.33
+  - Environments: .env.local
+  - Experiments (use with caution):
+    · optimizeCss
+
+   Creating an optimized production build ...
+Failed to compile.
+
+./app/api/admin/broker-integration/route.ts
+Module not found: Can't resolve '@/lib/broker-integration-manager'
+
+https://nextjs.org/docs/messages/module-not-found
+
+./app/api/admin/futures-trading/route.ts
+Module not found: Can't resolve '@/lib/futures-order-manager'
+
+https://nextjs.org/docs/messages/module-not-found
+
+./app/api/admin/futures/route.ts
+Module not found: Can't resolve '@/lib/futures-trading-integration'
+
+https://nextjs.org/docs/messages/module-not-found
+
+./app/api/admin/ib-connection/route.ts
+Module not found: Can't resolve '@/lib/ib-connection-manager'
+
+https://nextjs.org/docs/messages/module-not-found
+
+./app/api/admin/ib-connection/route.ts
+Module not found: Can't resolve '@/lib/always-connected-ib-service'
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+> Build failed because of webpack errors

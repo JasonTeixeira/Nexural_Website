@@ -1,0 +1,52 @@
+# robots.txt for Nexural Trading
+
+# Allow all bots to access public content
+User-agent: *
+Allow: /
+Allow: /api/health
+Allow: /api/market-status
+
+# Disallow private and admin areas
+Disallow: /admin/
+Disallow: /member-portal/
+Disallow: /api/auth/
+Disallow: /api/admin/
+Disallow: /api/member/
+Disallow: /api/community/follow
+Disallow: /api/positions/
+Disallow: /api/watchlist/
+Disallow: /portfolio/*
+Disallow: /profile/*
+
+# Crawl delay (be nice to servers)
+Crawl-delay: 1
+
+# Sitemap location
+Sitemap: https://nexuraltrading.com/sitemap.xml
+Sitemap: https://nexuraltrading.com/sitemap-0.xml
+
+# Specific bot configurations
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Slurp
+Allow: /
+Crawl-delay: 2
+
+# Block bad bots
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /

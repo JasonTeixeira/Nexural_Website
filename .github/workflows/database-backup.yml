@@ -1,0 +1,138 @@
+name: Database Backup
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+env:
+  BACKUP_RETENTION_DAYS: 30
+
+jobs:
+  backup:
+    name: Backup Database
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+      
+      - name: Create backup directory
+        run: mkdir -p backups
+      
+      - name: Run database backup
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          BACKUP_FILE="backups/nexural_backup_${TIMESTAMP}.sql"
+          
+          echo "🗄️  Starting database backup..."
+          pg_dump "$SUPABASE_DB_URL" \
+            --format=custom \
+            --compress=9 \
+            --file="$BACKUP_FILE" \
+            --no-owner \
+            --no-acl
+          
+          # Compress
+          gzip "$BACKUP_FILE"
+          
+          echo "✅ Backup completed: ${BACKUP_FILE}.gz"
+          ls -lh "backups/"
+      
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-backup-${{ github.run_number }}
+          path: backups/*.sql.gz
+          retention-days: ${{ env.BACKUP_RETENTION_DAYS }}
+      
+      - name: Send Discord notification (success)
+        if: success() && vars.DISCORD_BACKUP_WEBHOOK != ''
+        run: |
+          BACKUP_SIZE=$(du -h backups/*.sql.gz | cut -f1)
+          curl -X POST "${{ vars.DISCORD_BACKUP_WEBHOOK }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"content\": \"✅ **Database Backup Successful**\n📦 Size: ${BACKUP_SIZE}\n🕐 Time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')\n📋 Run: #${{ github.run_number }}\"}"
+      
+      - name: Send Discord notification (failure)
+        if: failure() && vars.DISCORD_BACKUP_WEBHOOK != ''
+        run: |
+          curl -X POST "${{ vars.DISCORD_BACKUP_WEBHOOK }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"content\": \"❌ **Database Backup Failed**\n🕐 Time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')\n📋 Run: #${{ github.run_number }}\n🔗 View logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}"
+  
+  # Optional: Upload to cloud storage
+  upload-to-cloud:
+    name: Upload to Cloud Storage
+    runs-on: ubuntu-latest
+    needs: backup
+    if: vars.ENABLE_CLOUD_BACKUP == 'true'
+    
+    steps:
+      - name: Download backup artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: database-backup-${{ github.run_number }}
+          path: backups
+      
+      # OPTION 1: Backblaze B2 (RECOMMENDED - 10GB free forever!)
+      # Requires: B2_KEY_ID, B2_APPLICATION_KEY secrets and B2_BUCKET_NAME variable
+      - name: Upload to Backblaze B2
+        env:
+          B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
+          B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
+          B2_BUCKET_NAME: ${{ vars.B2_BUCKET_NAME }}
+        run: |
+          # Install B2 CLI
+          pip install b2
+          
+          # Authorize
+          b2 authorize-account "$B2_KEY_ID" "$B2_APPLICATION_KEY"
+          
+          # Upload backups
+          for file in backups/*.sql.gz; do
+            filename=$(basename "$file")
+            b2 upload-file ${{ vars.B2_BUCKET_NAME }} "$file" "backups/$filename"
+            echo "✅ Uploaded $filename to Backblaze B2"
+          done
+          
+          echo "✅ All backups uploaded to Backblaze B2"
+      
+      # OPTION 2: AWS S3 (Uncomment if using S3 instead)
+      # - name: Configure AWS credentials
+      #   uses: aws-actions/configure-aws-credentials@v4
+      #   with:
+      #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #     aws-region: us-east-1
+      # 
+      # - name: Upload to S3
+      #   run: |
+      #     aws s3 cp backups/ s3://${{ vars.S3_BACKUP_BUCKET }}/backups/ --recursive
+      #     echo "✅ Uploaded to S3"
+      
+      # OPTION 3: Vercel Blob (Uncomment if using Vercel Blob)
+      # - name: Upload to Vercel Blob
+      #   env:
+      #     VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      #   run: |
+      #     npm install -g vercel
+      #     for file in backups/*.sql.gz; do
+      #       vercel blob upload "$file" --token="$VERCEL_TOKEN"
+      #     done
+      #     echo "✅ Uploaded to Vercel Blob"
+      
+      - name: Send success notification
+        if: success() && vars.DISCORD_BACKUP_WEBHOOK != ''
+        run: |
+          curl -X POST "${{ vars.DISCORD_BACKUP_WEBHOOK }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"content\": \"✅ **Cloud Backup Complete**\nBackups uploaded to cloud storage\n🕐 Time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')\"}"

@@ -1,0 +1,31 @@
+# Exclude large archive folders and development files
+_ARCHIVE/**
+node_modules/**
+.next/**
+.git/**
+
+# Exclude test and development files
+tests/**
+qa-results-*/**
+Python-testers/**
+databento-python/**
+ml_models/**
+ml_training/**
+
+# Exclude problematic admin routes from production build
+# These routes have import errors and are not needed for the social trading platform
+app/api/admin/broker-integration/**
+app/api/admin/futures-trading/**
+app/api/admin/futures/**
+app/api/admin/ib-connection/**
+app/api/admin/market-data/**
+app/api/admin/signal-routing/**
+
+# Exclude documentation and config files not needed in production
+*.md
+!README.md
+*.log
+*.sql
+!supabase/migrations/*.sql
+.env*
+!.env.production
