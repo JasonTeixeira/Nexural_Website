@@ -3,10 +3,16 @@ import { requireAdminSession, extractToken } from '@/lib/server-session-service'
 import { adminDataService } from '@/lib/admin-data-service'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Helper function to get Supabase client at runtime
+function getSupabaseClient() {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('Supabase credentials not configured')
+  }
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  )
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -63,6 +69,8 @@ export async function GET(request: NextRequest) {
 
 async function getRevenueAnalytics(startDate: Date, endDate: Date) {
   try {
+    const supabase = getSupabaseClient()
+    
     // Get all payments in timeframe
     const { data: payments } = await supabase
       .from('payments')
@@ -140,6 +148,8 @@ async function getRevenueAnalytics(startDate: Date, endDate: Date) {
 
 async function getMemberAnalytics(startDate: Date, endDate: Date) {
   try {
+    const supabase = getSupabaseClient()
+    
     // Get total members
     const { count: totalMembers } = await supabase
       .from('members')
@@ -216,6 +226,8 @@ async function getMemberAnalytics(startDate: Date, endDate: Date) {
 
 async function getSignalAnalytics(startDate: Date, endDate: Date) {
   try {
+    const supabase = getSupabaseClient()
+    
     // Get all signals in timeframe
     const { data: signals } = await supabase
       .from('trading_signals')
@@ -274,6 +286,8 @@ async function getSignalAnalytics(startDate: Date, endDate: Date) {
 
 async function getEngagementAnalytics(startDate: Date, endDate: Date) {
   try {
+    const supabase = getSupabaseClient()
+    
     // Get daily active users (members who logged in today)
     const today = new Date().toISOString().split('T')[0]
     const { count: dailyActiveUsers } = await supabase
