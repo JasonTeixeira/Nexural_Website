@@ -388,6 +388,15 @@ export function useInstallPrompt() {
 }
 
 // =============================================================================
+// SIMPLIFIED MOBILE CHECK
+// =============================================================================
+
+export function useIsMobile(): boolean {
+  const { isMobile } = useDeviceDetection()
+  return isMobile
+}
+
+// =============================================================================
 // EXPORTS
 // =============================================================================
 
@@ -401,4 +410,5 @@ export default {
   useSafeAreaInsets,
   useNetworkStatus,
   useInstallPrompt,
+  useIsMobile,
 }

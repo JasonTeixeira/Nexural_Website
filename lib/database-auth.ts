@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import bcrypt from 'bcryptjs'
-import jwt from 'jsonwebtoken'
+import jwt, { type SignOptions } from 'jsonwebtoken'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -123,7 +123,7 @@ export class DatabaseAuth {
     if (!this.jwtSecret) {
       this.jwtSecret = await configManager.getConfig('JWT_SECRET', 'fallback-secret-key')
     }
-    return this.jwtSecret
+    return this.jwtSecret || 'fallback-secret-key'
   }
 
   static async hashPassword(password: string): Promise<string> {
@@ -140,8 +140,8 @@ export class DatabaseAuth {
     refreshToken: string
   }> {
     const secret = await this.getJWTSecret()
-    const expiresIn = await configManager.getConfig('JWT_EXPIRES_IN', '24h') as string
-    const refreshExpiresIn = await configManager.getConfig('JWT_REFRESH_EXPIRES_IN', '7d') as string
+    const expiresIn = (await configManager.getConfig('JWT_EXPIRES_IN', '24h')) as string | number
+    const refreshExpiresIn = (await configManager.getConfig('JWT_REFRESH_EXPIRES_IN', '7d')) as string | number
 
     const payload = {
       id: user.id,
@@ -150,8 +150,8 @@ export class DatabaseAuth {
       role: user.role
     }
 
-    const accessToken = jwt.sign(payload, secret, { expiresIn: expiresIn })
-    const refreshToken = jwt.sign({ id: user.id }, secret, { expiresIn: refreshExpiresIn })
+    const accessToken = jwt.sign(payload, secret, { expiresIn } as SignOptions)
+    const refreshToken = jwt.sign({ id: user.id }, secret, { expiresIn: refreshExpiresIn } as SignOptions)
 
     // Store tokens in database
     const accessTokenHash = await bcrypt.hash(accessToken, 10)
@@ -306,7 +306,12 @@ export class DatabaseAuth {
     }
   }
 
-  private static parseTimeToMs(timeString: string): number {
+  private static parseTimeToMs(timeString: string | number): number {
+    // If it's already a number (milliseconds), return it
+    if (typeof timeString === 'number') {
+      return timeString
+    }
+
     const units: { [key: string]: number } = {
       's': 1000,
       'm': 60 * 1000,
@@ -314,7 +319,7 @@ export class DatabaseAuth {
       'd': 24 * 60 * 60 * 1000
     }
 
-    const match = timeString.match(/^(\d+)([smhd])$/)
+    const match = String(timeString).match(/^(\d+)([smhd])$/)
     if (!match) return 24 * 60 * 60 * 1000 // Default to 24 hours
 
     const [, amount, unit] = match

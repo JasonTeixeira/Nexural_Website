@@ -1,10 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Build configuration - temporarily bypass type checking for deployment
+  // TODO: Re-enable after fixing TypeScript errors post-deployment
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: true, // Temporary: allows faster builds
   },
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: true, // Temporary: allows deployment with type errors
   },
   
   // Image Optimization

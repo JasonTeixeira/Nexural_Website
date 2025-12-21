@@ -180,7 +180,7 @@ export class AlgoTradingGamification {
         levelUp,
         newLevel: levelUp ? newLevel.level : undefined,
         newLevelTitle: levelUp ? newLevel.title : undefined,
-        badgeEarned: badge
+        badgeEarned: badge || undefined
       }
       
     } catch (error) {
@@ -318,12 +318,20 @@ export class AlgoTradingGamification {
           })
         
         // Award badge points
-        await supabase
+        const { data: current } = await supabase
           .from('algo_trading_waitlist')
-          .update({
-            points: supabase.raw(`points + ${badge.points}`)
-          })
+          .select('points')
           .eq('member_id', memberId)
+          .single()
+        
+        if (current) {
+          await supabase
+            .from('algo_trading_waitlist')
+            .update({
+              points: (current.points || 0) + badge.points
+            })
+            .eq('member_id', memberId)
+        }
         
         // Send badge notification
         await this.sendBadgeNotification(memberId, badge)
