@@ -13,15 +13,17 @@ import { createClient } from '@supabase/supabase-js'
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
 
-// Initialize Supabase client with service role
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+// Lazy Supabase client initialization (runtime only)
+function getSupabaseClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  throw new Error('Missing Supabase credentials')
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error('Missing Supabase credentials')
+  }
+
+  return createClient(supabaseUrl, supabaseServiceKey)
 }
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 // Resend client
 const RESEND_API_KEY = process.env.RESEND_API_KEY
@@ -32,8 +34,10 @@ const FROM_EMAIL = process.env.FROM_EMAIL || 'admin@nexural.io'
  */
 export async function loginAdmin(email: string, password: string, ipAddress: string) {
   try {
+    const supabase = getSupabaseClient()
+    
     // Get user from database
-    const { data: user, error } = await supabase
+    const { data: user, error} = await supabase
       .from('admin_users')
       .select('*')
       .eq('email', email.toLowerCase())
@@ -116,6 +120,8 @@ export async function loginAdmin(email: string, password: string, ipAddress: str
  */
 export async function requestPasswordReset(email: string) {
   try {
+    const supabase = getSupabaseClient()
+    
     // Get user from database
     const { data: user, error } = await supabase
       .from('admin_users')
@@ -167,6 +173,8 @@ export async function requestPasswordReset(email: string) {
  */
 export async function resetPassword(token: string, newPassword: string) {
   try {
+    const supabase = getSupabaseClient()
+    
     // Find valid token
     const { data: resetToken, error: tokenError } = await supabase
       .from('password_reset_tokens')
@@ -218,6 +226,8 @@ export async function resetPassword(token: string, newPassword: string) {
  */
 export async function verifyAdminSession(adminId: string) {
   try {
+    const supabase = getSupabaseClient()
+    
     const { data: user, error } = await supabase
       .from('admin_users')
       .select('id, email, full_name, is_active')
@@ -245,6 +255,8 @@ async function logAuditEvent(
   ipAddress: string | null
 ) {
   try {
+    const supabase = getSupabaseClient()
+    
     await supabase
       .from('admin_audit_log')
       .insert({
@@ -322,6 +334,8 @@ async function sendPasswordResetEmail(
  */
 export async function cleanExpiredTokens() {
   try {
+    const supabase = getSupabaseClient()
+    
     await supabase
       .from('password_reset_tokens')
       .delete()
@@ -339,6 +353,8 @@ export async function cleanExpiredTokens() {
  */
 export async function isAdminAuthenticated(adminId: string): Promise<boolean> {
   try {
+    const supabase = getSupabaseClient()
+    
     const { data: user } = await supabase
       .from('admin_users')
       .select('is_active')
@@ -356,6 +372,8 @@ export async function isAdminAuthenticated(adminId: string): Promise<boolean> {
  */
 export async function getAdminUser(adminId: string) {
   try {
+    const supabase = getSupabaseClient()
+    
     const { data: user } = await supabase
       .from('admin_users')
       .select('id, email, full_name, is_active')
