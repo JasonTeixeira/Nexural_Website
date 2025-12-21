@@ -9,17 +9,18 @@ import { LucideIcon } from 'lucide-react'
 interface DashboardWidgetProps {
   title: string
   description?: string
-  icon?: LucideIcon
-  status?: 'success' | 'warning' | 'error' | 'info' | 'neutral'
+  icon?: ReactNode
+  status?: 'success' | 'warning' | 'error' | 'info' | 'neutral' | 'connected' | 'disconnected'
   statusText?: string
   value?: string | number
   change?: string
   changeType?: 'positive' | 'negative' | 'neutral'
-  actions?: {
+  stats?: {
     label: string
-    onClick: () => void
-    variant?: 'default' | 'outline' | 'ghost'
+    value: string | number
+    subtext: string
   }[]
+  actions?: ReactNode
   children?: ReactNode
   className?: string
 }
@@ -29,7 +30,9 @@ const statusColors = {
   warning: 'bg-amber-500/10 border-amber-500/50 text-amber-400',
   error: 'bg-red-500/10 border-red-500/50 text-red-400',
   info: 'bg-blue-500/10 border-blue-500/50 text-blue-400',
-  neutral: 'bg-gray-500/10 border-gray-500/50 text-gray-400'
+  neutral: 'bg-gray-500/10 border-gray-500/50 text-gray-400',
+  connected: 'bg-green-500/10 border-green-500/50 text-green-400',
+  disconnected: 'bg-red-500/10 border-red-500/50 text-red-400'
 }
 
 const statusDotColors = {
@@ -37,7 +40,9 @@ const statusDotColors = {
   warning: 'bg-amber-500',
   error: 'bg-red-500',
   info: 'bg-blue-500',
-  neutral: 'bg-gray-500'
+  neutral: 'bg-gray-500',
+  connected: 'bg-green-500',
+  disconnected: 'bg-red-500'
 }
 
 export function DashboardWidget({
@@ -60,7 +65,7 @@ export function DashboardWidget({
           <div className="flex items-center gap-3 flex-1">
             {Icon && (
               <div className="p-2 bg-blue-500/10 rounded-lg">
-                <Icon className="h-5 w-5 text-blue-400" />
+                {Icon}
               </div>
             )}
             <div className="flex-1">
@@ -110,23 +115,9 @@ export function DashboardWidget({
         )}
 
         {/* Actions */}
-        {actions && actions.length > 0 && (
+        {actions && (
           <div className="flex gap-2 mt-4 pt-4 border-t border-gray-700">
-            {actions.map((action, index) => (
-              <Button
-                key={index}
-                variant={action.variant || 'outline'}
-                size="sm"
-                onClick={action.onClick}
-                className={
-                  action.variant === 'default'
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                    : 'border-gray-600 text-gray-300 hover:bg-gray-700'
-                }
-              >
-                {action.label}
-              </Button>
-            ))}
+            {actions}
           </div>
         )}
       </CardContent>

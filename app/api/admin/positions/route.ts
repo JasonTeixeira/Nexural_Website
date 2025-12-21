@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     }
 
     const token = authHeader.substring(7)
-    const admin = verifyAdminToken(token)
+    const admin = await verifyAdminToken(token)
     if (!admin) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -100,7 +100,7 @@ export async function GET(request: Request) {
     }
 
     const token = authHeader.substring(7)
-    const admin = verifyAdminToken(token)
+    const admin = await verifyAdminToken(token)
     if (!admin) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

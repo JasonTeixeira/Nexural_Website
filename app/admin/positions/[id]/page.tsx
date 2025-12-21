@@ -173,9 +173,10 @@ export default async function PositionDetailPage({ params }: Props) {
       </div>
 
       {/* Quick Actions */}
+      {/* TODO: Re-enable after implementing proper modal state management
       {isOpen && (
         <div className="flex gap-4 mb-8">
-          <StopLossManager position={position} />
+          <StopLossManager position={position} isOpen={false} onClose={() => {}} onSuccess={() => {}} />
           <TargetManager position={position} />
           <Button variant="destructive">
             <X className="w-4 h-4 mr-2" />
@@ -183,6 +184,7 @@ export default async function PositionDetailPage({ params }: Props) {
           </Button>
         </div>
       )}
+      */}
 
       {/* Tabs */}
       <Tabs defaultValue="overview" className="space-y-4">
@@ -345,7 +347,7 @@ export default async function PositionDetailPage({ params }: Props) {
 
         {/* Activity Tab */}
         <TabsContent value="activity">
-          <ActivityTimeline position={position} />
+          <ActivityTimeline positionId={position.id} ticker={position.ticker} />
         </TabsContent>
 
         {/* Journal Tab */}

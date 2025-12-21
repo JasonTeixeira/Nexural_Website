@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { isAdminAuthenticated, getAdminUser, AdminUser } from '@/lib/admin-auth'
 
 interface Signal {
   signal_id: string
@@ -74,7 +73,6 @@ const SYMBOLS = [
 export default function AdminSignalsPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-  const [adminUser, setAdminUser] = useState<AdminUser | null>(null)
   const router = useRouter()
 
   // Signal generation state
@@ -108,9 +106,9 @@ export default function AdminSignalsPage() {
   // Check authentication
   useEffect(() => {
     const checkAuth = () => {
-      if (isAdminAuthenticated()) {
-        const user = getAdminUser()
-        setAdminUser(user)
+      // Check for admin authentication cookie
+      const isAuth = document.cookie.includes('admin_authenticated=true')
+      if (isAuth) {
         setIsAuthenticated(true)
       } else {
         router.push('/admin/login')

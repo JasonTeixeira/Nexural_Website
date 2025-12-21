@@ -23,11 +23,11 @@ export async function POST(req: NextRequest) {
     // Add more Stripe IPs as needed
   ]
   
-  const webhookVerification = await verifyWebhookRequest(req, stripeIPs)
-  if (!webhookVerification.valid) {
-    console.error('Webhook verification failed:', webhookVerification.reason)
+  const webhookVerification = await verifyWebhookRequest(req)
+  if (!webhookVerification) {
+    console.error('Webhook verification failed: Rate limit exceeded')
     return NextResponse.json(
-      { error: 'Webhook verification failed', reason: webhookVerification.reason }, 
+      { error: 'Webhook verification failed', reason: 'Rate limit exceeded' }, 
       { status: 403 }
     )
   }

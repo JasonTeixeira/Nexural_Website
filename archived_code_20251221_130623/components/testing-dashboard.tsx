@@ -48,11 +48,13 @@ export function TestingDashboard() {
       addResult(testName, {
         success: true,
         message: result.message || "Test passed",
-        data: result
+        data: result,
+        timestamp: new Date().toISOString()
       })
     } catch (error) {
       addResult(testName, {
         success: false,
+        timestamp: new Date().toISOString(),
         message: error instanceof Error ? error.message : "Test failed"
       })
     } finally {

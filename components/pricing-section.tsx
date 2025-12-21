@@ -139,7 +139,7 @@ export function PricingSection() {
       </div>
       <div className="self-stretch px-2 sm:px-5 flex flex-col lg:flex-row justify-start items-stretch gap-4 md:gap-6 mt-6 max-w-[1100px] mx-auto">
         {pricingPlans.map((plan) => {
-          const Icon = plan.icon
+          const Icon = plan.icon as React.ComponentType<{ className?: string }>
           return (
             <div
               key={plan.name}

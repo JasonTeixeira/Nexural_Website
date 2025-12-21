@@ -5,7 +5,7 @@ import RiskManagementIllustration from "./bento/risk-management-illustration"
 import EducationalResourcesIllustration from "./bento/educational-resources-illustration"
 import CommunityInsightsIllustration from "./bento/community-insights-illustration"
 
-const BentoCard = ({ title, description, Component }) => (
+const BentoCard = ({ title, description, Component }: { title: string; description: string; Component: React.ComponentType }) => (
   <div className="overflow-hidden rounded-2xl border border-white/20 flex flex-col justify-start items-start relative">
     {/* Background with blur effect */}
     <div

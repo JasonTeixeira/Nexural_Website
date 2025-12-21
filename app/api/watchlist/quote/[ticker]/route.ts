@@ -81,7 +81,7 @@ export async function GET(
 }
 
 // Fallback demo data in case API is not configured
-export async function getDemoStockData(ticker: string) {
+async function getDemoStockData(ticker: string) {
   const demoData: Record<string, any> = {
     AAPL: {
       ticker: 'AAPL',

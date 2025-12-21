@@ -644,7 +644,7 @@ export default function SettingsPage() {
                   <select
                     id="nodeEnv"
                     value={settings.nodeEnv}
-                    onChange={(e) => setSettings({...settings, nodeEnv: e.target.value})}
+                    onChange={(e) => setSettings({...settings, nodeEnv: e.target.value as 'development' | 'production' | 'test'})}
                     className="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white"
                   >
                     <option value="development">Development</option>

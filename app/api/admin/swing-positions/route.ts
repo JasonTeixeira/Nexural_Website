@@ -347,7 +347,7 @@ export async function PUT(request: NextRequest) {
       .single()
 
     if (updateError) {
-      console.error('Error updating swing position:', error)
+      console.error('Error updating swing position:', updateError)
       return NextResponse.json({ error: 'Failed to update position' }, { status: 500 })
     }
 
@@ -370,7 +370,7 @@ export async function PUT(request: NextRequest) {
       const discordChannelId = process.env.DISCORD_SIGNALS_CHANNEL_ID || 
                                process.env.DISCORD_GENERAL_CHANNEL_ID!
 
-      const statusEmoji = {
+      const statusEmoji: Record<string, string> = {
         'active': '🟢',
         'closed': '✅',
         'stopped_out': '🛑',
@@ -379,7 +379,7 @@ export async function PUT(request: NextRequest) {
 
       const embed = {
         embeds: [{
-          title: `${statusEmoji[status || 'active']} SWING POSITION UPDATE: ${existingPosition.symbol}`,
+          title: `${statusEmoji[status || 'active'] || '📊'} SWING POSITION UPDATE: ${existingPosition.symbol}`,
           description: update_notes || exit_notes || 'Position updated',
           color: (realized_pnl || unrealized_pnl) >= 0 ? 0x10b981 : 0xef4444,
           fields: [

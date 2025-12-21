@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { generateAdminToken } from '@/lib/admin-auth'
 import crypto from 'crypto'
 
 // In production, store these in a secure database

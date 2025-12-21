@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { isAdminAuthenticated } from '@/lib/admin-auth'
 
 interface SystemHealth {
   overall: 'healthy' | 'degraded' | 'critical'
@@ -73,7 +72,9 @@ export default function SystemMonitorPage() {
   const router = useRouter()
 
   useEffect(() => {
-    if (isAdminAuthenticated()) {
+    // Check for admin authentication cookie
+    const isAuth = document.cookie.includes('admin_authenticated=true')
+    if (isAuth) {
       setIsAuthenticated(true)
       loadSystemData()
     } else {

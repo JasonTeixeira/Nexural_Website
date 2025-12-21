@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { isAdminAuthenticated } from '@/lib/admin-auth'
 
 interface AnalyticsData {
   revenue: {
@@ -45,7 +44,9 @@ export default function AnalyticsPage() {
   const router = useRouter()
 
   useEffect(() => {
-    if (isAdminAuthenticated()) {
+    // Check for admin authentication cookie
+    const isAuth = document.cookie.includes('admin_authenticated=true')
+    if (isAuth) {
       setIsAuthenticated(true)
       loadAnalytics()
     } else {

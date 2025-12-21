@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { isAdminAuthenticated, getAdminUser, logoutAdmin } from "@/lib/admin-auth"
+// Admin auth functions (client-side only)
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Shield, LogOut } from "lucide-react"
@@ -18,11 +18,22 @@ export function AdminAuthWrapper({ children }: AdminAuthWrapperProps) {
 
   useEffect(() => {
     const checkAuth = () => {
-      const authenticated = isAdminAuthenticated()
+      // Check for admin authentication cookie
+      const authenticated = document.cookie.includes('admin_authenticated=true')
       setIsAuthenticated(authenticated)
       
       if (authenticated) {
-        setAdminUser(getAdminUser())
+        // Get admin user from localStorage
+        const userStr = localStorage.getItem('admin_user')
+        if (userStr) {
+          try {
+            setAdminUser(JSON.parse(userStr))
+          } catch (e) {
+            setAdminUser({ name: 'Admin' })
+          }
+        } else {
+          setAdminUser({ name: 'Admin' })
+        }
       } else {
         router.push("/admin/login")
       }
@@ -32,7 +43,11 @@ export function AdminAuthWrapper({ children }: AdminAuthWrapperProps) {
   }, [router])
 
   const handleLogout = () => {
-    logoutAdmin()
+    // Clear cookies and localStorage
+    document.cookie = 'admin_authenticated=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+    document.cookie = 'admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+    localStorage.removeItem('admin_token')
+    localStorage.removeItem('admin_user')
     router.push("/admin/login")
   }
 

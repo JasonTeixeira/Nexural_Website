@@ -369,7 +369,7 @@ async function getMarketDataInfo() {
       .select('symbol')
       .limit(1000)
 
-    const uniqueSymbols = [...new Set(symbolsData?.map(d => d.symbol))] || []
+    const uniqueSymbols = symbolsData ? [...new Set(symbolsData.map(d => d.symbol))] : []
 
     return {
       isConnected: true, // Databento connection

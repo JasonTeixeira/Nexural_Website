@@ -23,7 +23,7 @@ export function IBGatewayWidget({ data, onConnect, onDisconnect, onHealthCheck }
     return `${hours}h ${minutes}m`
   }
 
-  const status = data?.isConnected ? 'connected' : 'disconnected'
+  const status = data?.isConnected ? 'success' : 'error'
   const statusText = data?.isConnected ? 'Connected' : 'Disconnected'
 
   const stats = [
