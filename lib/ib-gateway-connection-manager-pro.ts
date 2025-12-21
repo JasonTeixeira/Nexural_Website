@@ -6,11 +6,6 @@
 import { EventEmitter } from 'events'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
 export interface IBConnectionConfig {
   host: string
   port: number
@@ -523,6 +518,16 @@ export class IBGatewayConnectionManager extends EventEmitter {
    */
   private async logConnectionEvent(event: 'connected' | 'disconnected'): Promise<void> {
     try {
+      // Only log if env vars are available (skip during build)
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        return
+      }
+      
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.SUPABASE_SERVICE_ROLE_KEY
+      )
+      
       await supabase.from('ib_gateway_status').insert({
         event,
         host: this.config.host,
