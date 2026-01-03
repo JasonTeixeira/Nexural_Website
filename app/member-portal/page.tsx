@@ -41,7 +41,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import Link from 'next/link'
-import { CommunityActivityFeed } from '@/components/community-activity-feed'
+import { CommunityActivityFeed } from '@/components/social/community-activity-feed'
 import { RecentActivityWidget } from '@/components/widgets/recent-activity-widget'
 import { PerformanceChart } from '@/components/charts/performance-chart'
 import { WatchlistCompact } from '@/components/positions/watchlist-compact'

@@ -1,4 +1,4 @@
-import { HeroSection } from "@/components/hero-section"
+import { HeroSection } from "@/components/marketing/hero-section"
 import { AnimatedSection } from "@/components/animated-section"
 import dynamic from 'next/dynamic'
 

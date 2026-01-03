@@ -9,9 +9,9 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { TrendingUp, TrendingDown, Activity, DollarSign, Signal, AlertCircle, Calendar } from 'lucide-react'
 import Link from 'next/link'
-import { SwingPositionsWidget } from '@/components/swing-positions-widget'
+import { SwingPositionsWidget } from '@/components/positions/swing-positions-widget'
 import { DiscordConnectionCard } from '@/components/discord-connection-card'
-import { AlgoTradingHeroBanner } from '@/components/algo-trading-hero-banner'
+import { AlgoTradingHeroBanner } from '@/components/algo-trading/algo-trading-hero-banner'
 import { toast } from '@/hooks/use-toast'
 
 interface MemberData {

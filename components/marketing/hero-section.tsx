@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import TradingSignalsIllustration from "./bento/trading-signals-illustration"
-import MarketAnalysisIllustration from "./bento/market-analysis-illustration"
-import PortfolioTrackingIllustration from "./bento/portfolio-tracking-illustration"
-import RiskManagementIllustration from "./bento/risk-management-illustration"
-import EducationalResourcesIllustration from "./bento/educational-resources-illustration"
-import CommunityInsightsIllustration from "./bento/community-insights-illustration"
+import TradingSignalsIllustration from "../bento/trading-signals-illustration"
+import MarketAnalysisIllustration from "../bento/market-analysis-illustration"
+import PortfolioTrackingIllustration from "../bento/portfolio-tracking-illustration"
+import RiskManagementIllustration from "../bento/risk-management-illustration"
+import EducationalResourcesIllustration from "../bento/educational-resources-illustration"
+import CommunityInsightsIllustration from "../bento/community-insights-illustration"
 
 const CodeIcon = () => (
   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-client'
-import { ReferralDashboard } from '@/components/referral-dashboard'
+import { ReferralDashboard } from '@/components/referrals/referral-dashboard'
 import { getOrCreateReferralCode } from '@/lib/referral/referral-utils'
 import { Activity } from 'lucide-react'
 
