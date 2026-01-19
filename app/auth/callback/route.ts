@@ -48,11 +48,11 @@ export async function GET(request: NextRequest) {
             // Continue anyway - profile can be created later
           }
 
-          // 🔥 AUTO-FOLLOW ADMIN USER (CRITICAL FEATURE)
-          // Replace 'YOUR_ADMIN_USER_ID_HERE' with your actual admin user ID
-          const ADMIN_USER_ID = process.env.NEXT_PUBLIC_ADMIN_USER_ID || 'YOUR_ADMIN_USER_ID_HERE'
-          
-          if (ADMIN_USER_ID !== 'YOUR_ADMIN_USER_ID_HERE') {
+          // SSOT: Follow Admin is mandatory (docs/PERMISSIONS_PRIVACY.md)
+          // We use ADMIN_USER_ID (server-side) as the canonical admin identity.
+          const ADMIN_USER_ID = process.env.ADMIN_USER_ID
+
+          if (ADMIN_USER_ID) {
             try {
               const { error: followError } = await supabase
                 .from('follows')
