@@ -185,6 +185,9 @@ backups/
 *.sql
 *.sql.gz
 
+# Supabase migrations are part of the SSOT and must be committed
+!supabase/migrations/*.sql
+
 # Large archive folders (7.3GB+ - do not commit)
 _ARCHIVE/
 
@@ -201,3 +204,4 @@ databento-python/
 # Documentation and status files (keep README only)
 *.md
 !README.md
+!docs/**/*.md

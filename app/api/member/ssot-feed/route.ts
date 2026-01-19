@@ -32,6 +32,8 @@ export async function GET(req: NextRequest) {
   const limitRaw = Number(url.searchParams.get('limit') || 50)
   const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 100) : 50
   const cursor = url.searchParams.get('cursor')
+  const since = url.searchParams.get('since') // ISO timestamp
+  const markSeen = url.searchParams.get('markSeen') === '1'
 
   // Best-effort safety filters
   const blockedRes = await supabase.from('user_blocks').select('blocked_id').eq('blocker_id', user.id)
@@ -45,12 +47,17 @@ export async function GET(req: NextRequest) {
   let q = supabase
     .from('position_events')
     .select('id,position_id,event_type,event_date,created_by,actor_id,amendment_class')
-    .in('event_type', ['position.opened', 'position.closed'])
+    .in('event_type', ['position.opened', 'position.closed', 'position.stop_hit', 'position.target_hit'])
     .order('event_date', { ascending: false })
     .limit(limit)
 
   if (cursor) {
     q = q.lt('event_date', cursor)
+  }
+
+  if (since) {
+    // "Since last visit" feed mode (docs/FEED_ALERTS_SPEC.md)
+    q = q.gt('event_date', since)
   }
 
   const { data: events, error: evErr } = await q
@@ -125,6 +132,20 @@ export async function GET(req: NextRequest) {
     .filter(Boolean)
 
   const nextCursor = items.length > 0 ? (items[items.length - 1] as any).occurred_at : null
+
+  // Optionally record last seen for "since last visit" experience.
+  // This is best-effort; do not block feed reads.
+  if (markSeen) {
+    try {
+      await supabase.from('feed_last_seen').upsert({
+        user_id: user.id,
+        last_seen_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as any)
+    } catch {
+      // ignore
+    }
+  }
+
   return NextResponse.json({ items, nextCursor })
 }
-
