@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { activityWriter } from '@/lib/activity-writer'
+// NOTE: ADMIN_USER_ID is optional; if missing, admin-event fanout is skipped.
 
 export const dynamic = 'force-dynamic'
 
@@ -23,6 +24,7 @@ export async function POST(request: Request) {
   }
 
   const svc = createServiceClient()
+  const adminUserId = process.env.ADMIN_USER_ID || null
   const sinceMinutes = Number(new URL(request.url).searchParams.get('sinceMinutes') || '60')
   const since = new Date(Date.now() - sinceMinutes * 60 * 1000).toISOString()
 
@@ -54,10 +56,8 @@ export async function POST(request: Request) {
     // Followers of the actor (member events) OR followers of admin
     let followingId: string | null = null
     if (isAdmin) {
-      // For now, treat created_by as the admin identity anchor for follows.
-      // If your follow model uses a dedicated admin user_id, we will wire it here.
-      // v1: alert only users who have admin_trade_alerts_enabled.
-      followingId = null
+      // SSOT: admin follow is mandatory; we use ADMIN_USER_ID as the canonical anchor.
+      followingId = adminUserId
     } else {
       // Member position: actor_id should be the owner.
       followingId = ev.actor_id || null
@@ -73,10 +73,27 @@ export async function POST(request: Request) {
 
     // Admin alerts: default ON via alert_preferences (row may not exist; treat as true).
     let recipients: string[] = followerIds
+
+    // Admin alerts: filter recipients by alert_preferences (default ON if row missing).
     if (isAdmin) {
-      // Discover candidate recipients (all members who follow admin user id not implemented yet).
-      // Safe fallback: no-op until admin user id is defined in the follow graph.
-      recipients = []
+      if (!adminUserId) {
+        recipients = []
+      } else {
+        const { data: prefs } = await svc
+          .from('alert_preferences')
+          .select('user_id,admin_trade_alerts_enabled')
+          .in('user_id', followerIds)
+
+        const enabled = new Set(
+          (prefs || [])
+            .filter((p: any) => p.admin_trade_alerts_enabled !== false)
+            .map((p: any) => p.user_id)
+        )
+
+        // If a user has no row in alert_preferences, treat as enabled.
+        const hasRow = new Set((prefs || []).map((p: any) => p.user_id))
+        recipients = followerIds.filter((id) => enabled.has(id) || !hasRow.has(id))
+      }
     }
 
     const title =
@@ -120,4 +137,3 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ ok: true, events: (events || []).length, notificationsSent: sent })
 }
-

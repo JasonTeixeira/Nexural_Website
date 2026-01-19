@@ -128,6 +128,14 @@ const ENV_SCHEMA: EnvConfig[] = [
     type: 'string',
     description: 'Node environment (development/production)',
   },
+
+  // SSOT: Admin identity anchor (for follow-admin + alerts)
+  {
+    name: 'ADMIN_USER_ID',
+    required: false,
+    type: 'string',
+    description: 'Canonical admin auth.users id (UUID) used for follow-admin + alerts fanout',
+  },
 ]
 
 interface ValidationResult {
