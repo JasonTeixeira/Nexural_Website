@@ -118,6 +118,31 @@ export async function POST(request: Request) {
               ? 'position_target_hit'
               : 'position_closed'
 
+    // Member alerts: OFF by default (SSOT). Only notify followers who opted in.
+    if (!isAdmin && followerIds.length > 0) {
+      const { data: settings } = await svc
+        .from('follow_notification_settings')
+        .select('user_id,position_opened,position_closed,position_stop_hit,position_target_hit')
+        .in('user_id', followerIds)
+        .eq('following_id', ev.actor_id)
+
+      const allow = new Set(
+        (settings || [])
+          .filter((s: any) => {
+            if (ev.event_type === 'position.opened') return s.position_opened === true
+            if (ev.event_type === 'position.closed') return s.position_closed === true
+            if (ev.event_type === 'position.stop_hit') return s.position_stop_hit === true
+            if (ev.event_type === 'position.target_hit') return s.position_target_hit === true
+            return false
+          })
+          .map((s: any) => s.user_id)
+      )
+
+      recipients = recipients.filter((id) => allow.has(id))
+    }
+
+    if (recipients.length === 0) continue
+
     await Promise.all(
       recipients.map((userId) =>
         activityWriter.notify({
