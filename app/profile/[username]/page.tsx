@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -23,6 +23,9 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import Image from 'next/image'
+import { ReportBlockMenu } from '@/components/social/report-block-menu'
+import { useBlocking } from '@/hooks/use-blocking'
 
 interface UserProfile {
   id: string
@@ -35,6 +38,7 @@ interface UserProfile {
   twitter_handle: string | null
   is_profile_public: boolean
   show_performance: boolean
+  portfolio_visibility_mode?: 'public' | 'private'
   follower_count: number
   following_count: number
   total_positions: number
@@ -80,12 +84,9 @@ export default function PublicProfilePage() {
   const [loading, setLoading] = useState(true)
   const [isFollowing, setIsFollowing] = useState(false)
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const blocking = useBlocking()
 
-  useEffect(() => {
-    loadProfileData()
-  }, [username])
-
-  async function loadProfileData() {
+  const loadProfileData = useCallback(async () => {
     try {
       const supabase = createClient()
 
@@ -108,6 +109,19 @@ export default function PublicProfilePage() {
       // Check if profile is public
       if (!profileData.is_profile_public && (!user || user.id !== profileData.user_id)) {
         // Profile is private and viewer is not the owner
+        setLoading(false)
+        return
+      }
+
+      // SSOT: global portfolio visibility mode overrides per-portfolio visibility.
+      if (profileData.portfolio_visibility_mode === 'private' && (!user || user.id !== profileData.user_id)) {
+        setLoading(false)
+        return
+      }
+
+      // If viewer has blocked this user (or vice versa), hide profile.
+      // NOTE: reverse-block (they blocked viewer) depends on RLS; this is best-effort.
+      if (user && blocking.isBlocked(profileData.user_id)) {
         setLoading(false)
         return
       }
@@ -154,33 +168,32 @@ export default function PublicProfilePage() {
       console.error('Error loading profile:', error)
       setLoading(false)
     }
-  }
+  }, [username])
+
+  useEffect(() => {
+    void loadProfileData()
+  }, [loadProfileData])
 
   async function handleFollowToggle() {
     if (!currentUser || !profile) return
 
     try {
-      const supabase = createClient()
-
       if (isFollowing) {
         // Unfollow
-        await supabase
-          .from('follows')
-          .delete()
-          .eq('follower_id', currentUser.id)
-          .eq('following_id', profile.user_id)
-
+        await fetch('/api/community/follow', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ followingUserId: profile.user_id, action: 'unfollow' }),
+        })
         setIsFollowing(false)
         setProfile({...profile, follower_count: profile.follower_count - 1})
       } else {
         // Follow
-        await supabase
-          .from('follows')
-          .insert({
-            follower_id: currentUser.id,
-            following_id: profile.user_id
-          })
-
+        await fetch('/api/community/follow', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ followingUserId: profile.user_id, action: 'follow' }),
+        })
         setIsFollowing(true)
         setProfile({...profile, follower_count: profile.follower_count + 1})
       }
@@ -191,10 +204,10 @@ export default function PublicProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0E1A] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500 mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading profile...</p>
+          <p className="text-muted-foreground">Loading profile...</p>
         </div>
       </div>
     )
@@ -202,11 +215,11 @@ export default function PublicProfilePage() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-[#0A0E1A] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <User className="h-16 w-16 text-gray-600 mx-auto mb-4" />
+          <User className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-2">Profile Not Found</h1>
-          <p className="text-gray-400 mb-4">This profile doesn't exist or is private</p>
+          <p className="text-muted-foreground mb-4">This profile doesn't exist or is private</p>
           <Link href="/">
             <Button>
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -221,11 +234,11 @@ export default function PublicProfilePage() {
   const isOwnProfile = currentUser && currentUser.id === profile.user_id
 
   return (
-    <div className="min-h-screen bg-[#0A0E1A]">
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="bg-gradient-to-r from-cyan-900/20 to-blue-900/20 border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <Link href="/" className="inline-flex items-center text-gray-400 hover:text-white mb-6">
+          <Link href="/" className="inline-flex items-center text-muted-foreground hover:text-foreground mb-6">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Home
           </Link>
@@ -234,7 +247,7 @@ export default function PublicProfilePage() {
             {/* Avatar */}
             <div className="w-24 h-24 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center flex-shrink-0">
               {profile.avatar_url ? (
-                <img src={profile.avatar_url} alt={profile.username} className="w-full h-full rounded-full object-cover" />
+                <Image src={profile.avatar_url} alt={profile.username} width={96} height={96} className="w-full h-full rounded-full object-cover" />
               ) : (
                 <User className="h-12 w-12 text-white" />
               )}
@@ -247,7 +260,7 @@ export default function PublicProfilePage() {
                   <h1 className="text-3xl font-bold">
                     {profile.display_name || profile.username}
                   </h1>
-                  <p className="text-gray-400">@{profile.username}</p>
+                  <p className="text-muted-foreground">@{profile.username}</p>
                 </div>
 
                 {/* Actions */}
@@ -259,22 +272,25 @@ export default function PublicProfilePage() {
                       </Button>
                     </Link>
                   ) : currentUser ? (
-                    <Button
-                      onClick={handleFollowToggle}
-                      className={isFollowing ? 'bg-gray-700' : 'bg-gradient-to-r from-cyan-500 to-blue-500'}
-                    >
-                      {isFollowing ? (
-                        <>
-                          <UserMinus className="h-4 w-4 mr-2" />
-                          Unfollow
-                        </>
-                      ) : (
-                        <>
-                          <UserPlus className="h-4 w-4 mr-2" />
-                          Follow
-                        </>
-                      )}
-                    </Button>
+                    <>
+                      <Button
+                        onClick={handleFollowToggle}
+                        className={isFollowing ? 'bg-muted text-foreground hover:bg-muted/80' : 'bg-gradient-to-r from-cyan-500 to-blue-500'}
+                      >
+                        {isFollowing ? (
+                          <>
+                            <UserMinus className="h-4 w-4 mr-2" />
+                            Unfollow
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="h-4 w-4 mr-2" />
+                            Follow
+                          </>
+                        )}
+                      </Button>
+                      <ReportBlockMenu actorUserId={profile.user_id} targetType="user" targetId={profile.user_id} />
+                    </>
                   ) : (
                     <Link href="/auth/login">
                       <Button className="bg-gradient-to-r from-cyan-500 to-blue-500">
@@ -287,24 +303,24 @@ export default function PublicProfilePage() {
 
               {/* Bio */}
               {profile.bio && (
-                <p className="text-gray-300 mb-4">{profile.bio}</p>
+                <p className="text-foreground/80 mb-4">{profile.bio}</p>
               )}
 
               {/* Stats */}
               <div className="flex flex-wrap items-center gap-6 text-sm">
                 <div>
                   <span className="font-bold text-white">{profile.follower_count}</span>
-                  <span className="text-gray-400 ml-1">Followers</span>
+                  <span className="text-muted-foreground ml-1">Followers</span>
                 </div>
                 <div>
                   <span className="font-bold text-white">{profile.following_count}</span>
-                  <span className="text-gray-400 ml-1">Following</span>
+                  <span className="text-muted-foreground ml-1">Following</span>
                 </div>
                 <div>
                   <span className="font-bold text-white">{profile.total_positions}</span>
-                  <span className="text-gray-400 ml-1">Positions</span>
+                  <span className="text-muted-foreground ml-1">Positions</span>
                 </div>
-                <div className="flex items-center gap-1 text-gray-400">
+                <div className="flex items-center gap-1 text-muted-foreground">
                   <Calendar className="h-4 w-4" />
                   <span>Joined {new Date(profile.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
                 </div>
@@ -337,9 +353,9 @@ export default function PublicProfilePage() {
         {/* Performance Stats */}
         {profile.show_performance && (
           <div className="grid gap-4 md:grid-cols-3 mb-8">
-            <Card className="bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700">
+            <Card className="bg-card border-border">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-400">Total Return</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">Total Return</CardTitle>
                 <DollarSign className="h-4 w-4 text-yellow-400" />
               </CardHeader>
               <CardContent>
@@ -347,36 +363,36 @@ export default function PublicProfilePage() {
                   {profile.total_return ? `$${profile.total_return.toFixed(2)}` : 'N/A'}
                 </div>
                 {profile.total_return_pct && (
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     {profile.total_return_pct.toFixed(2)}% return
                   </p>
                 )}
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700">
+            <Card className="bg-card border-border">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-400">Win Rate</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">Win Rate</CardTitle>
                 <Target className="h-4 w-4 text-purple-400" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-white">
                   {profile.win_rate ? `${profile.win_rate.toFixed(1)}%` : 'N/A'}
                 </div>
-                <p className="text-xs text-gray-400 mt-1">Success rate</p>
+                <p className="text-xs text-muted-foreground mt-1">Success rate</p>
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700">
+            <Card className="bg-card border-border">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-400">Active Positions</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">Active Positions</CardTitle>
                 <TrendingUp className="h-4 w-4 text-green-400" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-white">
                   {positions.filter(p => p.status === 'open').length}
                 </div>
-                <p className="text-xs text-gray-400 mt-1">Currently trading</p>
+                <p className="text-xs text-muted-foreground mt-1">Currently trading</p>
               </CardContent>
             </Card>
           </div>
@@ -391,17 +407,17 @@ export default function PublicProfilePage() {
 
           <TabsContent value="positions" className="space-y-4">
             {positions.length === 0 ? (
-              <Card className="bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700">
+              <Card className="bg-card border-border">
                 <CardContent className="py-12">
                   <div className="text-center">
-                    <Target className="h-12 w-12 mx-auto mb-4 text-gray-600" />
-                    <p className="text-gray-400">No public positions yet</p>
+                    <Target className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-muted-foreground">No public positions yet</p>
                   </div>
                 </CardContent>
               </Card>
             ) : (
               positions.map((position) => (
-                <Card key={position.id} className="bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700 hover:border-cyan-500/50 transition-all">
+                <Card key={position.id} className="bg-card border-border hover:border-cyan-500/50 transition-all">
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
@@ -421,13 +437,13 @@ export default function PublicProfilePage() {
                               {position.status}
                             </Badge>
                           </div>
-                          <p className="text-sm text-gray-400">
+                          <p className="text-sm text-muted-foreground">
                             {position.quantity} shares @ ${position.entry_price.toFixed(2)}
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs text-gray-400">Entry Date</p>
+                        <p className="text-xs text-muted-foreground">Entry Date</p>
                         <p className="font-semibold">
                           {new Date(position.entry_date).toLocaleDateString()}
                         </p>
@@ -441,18 +457,18 @@ export default function PublicProfilePage() {
 
           <TabsContent value="portfolios" className="space-y-4">
             {portfolios.length === 0 ? (
-              <Card className="bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700">
+              <Card className="bg-card border-border">
                 <CardContent className="py-12">
                   <div className="text-center">
-                    <Target className="h-12 w-12 mx-auto mb-4 text-gray-600" />
-                    <p className="text-gray-400">No public portfolios yet</p>
+                    <Target className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-muted-foreground">No public portfolios yet</p>
                   </div>
                 </CardContent>
               </Card>
             ) : (
               portfolios.map((portfolio) => (
                 <Link key={portfolio.id} href={`/portfolio/${portfolio.id}`}>
-                  <Card className="bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700 hover:border-cyan-500/50 transition-all cursor-pointer group">
+                  <Card className="bg-card border-border hover:border-cyan-500/50 transition-all cursor-pointer group">
                     <CardHeader>
                       <CardTitle className="group-hover:text-cyan-400 transition-colors flex items-center gap-2">
                         {portfolio.name}
@@ -465,26 +481,26 @@ export default function PublicProfilePage() {
                     <CardContent>
                       <div className="grid grid-cols-3 gap-4 mb-4">
                         <div>
-                          <p className="text-sm text-gray-400">Total Value</p>
+                          <p className="text-sm text-muted-foreground">Total Value</p>
                           <p className="text-lg font-bold text-white">
                             ${portfolio.total_value.toFixed(2)}
                           </p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-400">Return</p>
+                          <p className="text-sm text-muted-foreground">Return</p>
                           <p className={`text-lg font-bold ${portfolio.total_return >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                             {portfolio.total_return >= 0 ? '+' : ''}${portfolio.total_return.toFixed(2)}
                           </p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-400">Win Rate</p>
+                          <p className="text-sm text-muted-foreground">Win Rate</p>
                           <p className="text-lg font-bold text-white">
                             {portfolio.win_rate.toFixed(1)}%
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between pt-4 border-t border-gray-700">
-                        <p className="text-sm text-gray-400">Click to explore portfolio</p>
+                      <div className="flex items-center justify-between pt-4 border-t border-border">
+                        <p className="text-sm text-muted-foreground">Click to explore portfolio</p>
                         <Badge variant="outline" className="group-hover:bg-cyan-500/20 group-hover:text-cyan-400 group-hover:border-cyan-500/30 transition-all">
                           View Details
                         </Badge>
