@@ -53,12 +53,19 @@ export async function POST(request: Request) {
       // Positions in timeframe (v1: realized only for positions closed within window)
       const { data: positions } = await svc
         .from('positions')
-        .select('id,user_id,opened_at,closed_at,entry_price,exit_price,quantity,direction,fees_total')
+        .select('id,user_id,opened_at,closed_at,entry_price,exit_price,quantity,direction,fees_total,is_backfilled,imported_at')
         .eq('user_id', u.user_id)
         .not('closed_at', 'is', null)
         .gte('closed_at', windowStart.toISOString())
 
-      const closed = positions || []
+      // Backfill aging rule (SSOT): exclude backfilled/imported positions until aged 14 days
+      const cutoff = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
+      const closed = (positions || []).filter((p: any) => {
+        if (p.is_backfilled !== true) return true
+        const importedAt = p.imported_at ? new Date(p.imported_at) : null
+        if (!importedAt) return false
+        return importedAt <= cutoff
+      })
       let totalPnl = 0
       let totalRisk = 0
       let wins = 0
@@ -104,4 +111,3 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ ok: true, upserts })
 }
-
