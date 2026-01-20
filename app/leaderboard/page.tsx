@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -14,14 +14,10 @@ import {
   ArrowLeft,
   Crown,
   Medal,
-  Star,
-  ChevronUp,
-  ChevronDown,
-  Minus,
-  Flame
+  Star
 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import Image from 'next/image'
 
 interface LeaderboardEntry {
   rank: number
@@ -29,133 +25,87 @@ interface LeaderboardEntry {
   username: string
   display_name: string | null
   avatar_url: string | null
-  total_return_pct: number
+  bio?: string | null
+  return_pct: number
   win_rate: number
   total_positions: number
   follower_count: number
-  rank_change?: number // Change from last period
 }
 
 type LeaderboardCategory = 'returns' | 'win_rate' | 'consistency'
-type TimePeriod = 'weekly' | 'monthly' | 'all_time'
+type TimePeriod = 'd30' | 'd60' | 'd90'
 
 export default function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [category, setCategory] = useState<LeaderboardCategory>('returns')
-  const [period, setPeriod] = useState<TimePeriod>('monthly')
+  const [period, setPeriod] = useState<TimePeriod>('d30')
   const [currentUserRank, setCurrentUserRank] = useState<LeaderboardEntry | null>(null)
-  const [currentUser, setCurrentUser] = useState<any>(null)
 
-  useEffect(() => {
-    loadLeaderboard()
-  }, [category, period])
+  const timeframeDays = useMemo(() => {
+    if (period === 'd60') return 60
+    if (period === 'd90') return 90
+    return 30
+  }, [period])
 
-  async function loadLeaderboard() {
+  const loadLeaderboard = useCallback(async () => {
     try {
-      const supabase = createClient()
-      
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser()
-      setCurrentUser(user)
+      setLoading(true)
 
-      // Build query based on category
-      let orderColumn = 'total_return_pct'
+      // SSOT: derive from rollups read model
+      const res = await fetch(`/api/member/leaderboard?timeframe=${timeframeDays}&limit=100`)
+      const j = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(j?.error || 'Failed to load leaderboard')
+
+      let items: LeaderboardEntry[] = (j.items || []).map((it: any) => ({
+        rank: it.rank,
+        user_id: it.user_id,
+        username: it.username || 'unknown',
+        display_name: it.display_name || null,
+        avatar_url: it.avatar_url || null,
+        bio: it.bio || null,
+        return_pct: Number(it.return_pct || 0),
+        win_rate: Number(it.win_rate || 0),
+        total_positions: Number(it.total_positions || 0),
+        follower_count: Number(it.follower_count || 0),
+      }))
+
+      // Category sorting (v1 UI):
+      // - returns uses return_pct
+      // - win_rate uses win_rate
+      // - consistency uses total_positions (proxy)
       if (category === 'win_rate') {
-        orderColumn = 'win_rate'
+        items = [...items].sort((a, b) => b.win_rate - a.win_rate)
       } else if (category === 'consistency') {
-        orderColumn = 'total_positions'
+        items = [...items].sort((a, b) => b.total_positions - a.total_positions)
       }
 
-      // Load top performers
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('user_id, username, display_name, avatar_url, total_return_pct, win_rate, total_positions, follower_count')
-        .eq('is_profile_public', true)
-        .not(orderColumn, 'is', null)
-        .order(orderColumn, { ascending: false })
-        .limit(100)
-
-      if (error) throw error
-
-      // Add ranks and format data with simulated rank changes
-      const rankedData: LeaderboardEntry[] = (data || []).map((entry, index) => {
-        // Simulate rank changes based on performance (in production, compare with stored previous ranks)
-        let rankChange = 0
-        if (index < data.length) {
-          // Top performers often have positive momentum
-          if (index < 5) {
-            rankChange = Math.floor(Math.random() * 3) // 0-2 positions up
-          } else if (index < 20) {
-            rankChange = Math.floor(Math.random() * 5) - 2 // -2 to +2
-          } else {
-            rankChange = Math.floor(Math.random() * 7) - 3 // -3 to +3
-          }
-        }
-        
-        return {
-          rank: index + 1,
-          ...entry,
-          total_return_pct: entry.total_return_pct || 0,
-          win_rate: entry.win_rate || 0,
-          total_positions: entry.total_positions || 0,
-          follower_count: entry.follower_count || 0,
-          rank_change: rankChange
-        }
-      })
-
-      setLeaderboard(rankedData)
-
-      // Find current user's rank if logged in
-      if (user) {
-        const userEntry = rankedData.find(entry => entry.user_id === user.id)
-        if (userEntry) {
-          setCurrentUserRank(userEntry)
-        } else {
-          // User not in top 100, fetch their rank
-          const { data: userData } = await supabase
-            .from('user_profiles')
-            .select('user_id, username, display_name, avatar_url, total_return_pct, win_rate, total_positions, follower_count')
-            .eq('user_id', user.id)
-            .single()
-
-          if (userData) {
-            // Count users with better performance
-            const { count } = await supabase
-              .from('user_profiles')
-              .select('*', { count: 'exact', head: true })
-              .eq('is_profile_public', true)
-              .gt(orderColumn, userData[orderColumn as keyof typeof userData] || 0)
-
-            setCurrentUserRank({
-              rank: (count || 0) + 1,
-              ...userData,
-              total_return_pct: userData.total_return_pct || 0,
-              win_rate: userData.win_rate || 0,
-              total_positions: userData.total_positions || 0,
-              follower_count: userData.follower_count || 0
-            })
-          }
-        }
-      }
+      // Re-rank after sorting
+      items = items.map((it, idx) => ({ ...it, rank: idx + 1 }))
+      setLeaderboard(items)
+      setCurrentUserRank(null)
 
       setLoading(false)
     } catch (error) {
       console.error('Error loading leaderboard:', error)
       setLoading(false)
     }
-  }
+  }, [category, timeframeDays])
+
+  useEffect(() => {
+    void loadLeaderboard()
+  }, [loadLeaderboard])
 
   function getRankIcon(rank: number) {
     if (rank === 1) return <Crown className="h-5 w-5 text-yellow-400" />
-    if (rank === 2) return <Medal className="h-5 w-5 text-gray-300" />
+    if (rank === 2) return <Medal className="h-5 w-5 text-muted-foreground" />
     if (rank === 3) return <Medal className="h-5 w-5 text-amber-600" />
-    return <span className="text-gray-400 font-bold">#{rank}</span>
+    return <span className="text-muted-foreground font-bold">#{rank}</span>
   }
 
   function getRankBadge(rank: number) {
     if (rank === 1) return <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/50">🏆 Champion</Badge>
-    if (rank === 2) return <Badge className="bg-gray-300/20 text-gray-300 border-gray-300/50">🥈 Runner-up</Badge>
+    if (rank === 2) return <Badge className="bg-muted text-muted-foreground border-border">🥈 Runner-up</Badge>
     if (rank === 3) return <Badge className="bg-amber-600/20 text-amber-400 border-amber-600/50">🥉 3rd Place</Badge>
     if (rank <= 10) return <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/50">⭐ Top 10</Badge>
     if (rank <= 50) return <Badge variant="secondary">Top 50</Badge>
@@ -163,7 +113,7 @@ export default function LeaderboardPage() {
   }
 
   function getCategoryValue(entry: LeaderboardEntry) {
-    if (category === 'returns') return `${entry.total_return_pct >= 0 ? '+' : ''}${entry.total_return_pct.toFixed(2)}%`
+    if (category === 'returns') return `${entry.return_pct >= 0 ? '+' : ''}${entry.return_pct.toFixed(2)}%`
     if (category === 'win_rate') return `${entry.win_rate.toFixed(1)}%`
     return `${entry.total_positions} positions`
   }
@@ -176,21 +126,21 @@ export default function LeaderboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0E1A] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500 mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading leaderboard...</p>
+          <p className="text-muted-foreground">Loading leaderboard...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0E1A]">
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="bg-gradient-to-r from-yellow-900/20 via-cyan-900/20 to-blue-900/20 border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <Link href="/" className="inline-flex items-center text-gray-400 hover:text-white mb-6">
+          <Link href="/" className="inline-flex items-center text-muted-foreground hover:text-foreground mb-6">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Home
           </Link>
@@ -205,7 +155,7 @@ export default function LeaderboardPage() {
                   </span>
                 </h1>
               </div>
-              <p className="text-xl text-gray-400">
+              <p className="text-xl text-muted-foreground">
                 Top performing traders in the community
               </p>
             </div>
@@ -217,14 +167,14 @@ export default function LeaderboardPage() {
                   <div className="flex items-center gap-3">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-cyan-400">#{currentUserRank.rank}</div>
-                      <div className="text-xs text-gray-400">Your Rank</div>
+                      <div className="text-xs text-muted-foreground">Your Rank</div>
                     </div>
                     <div className="h-10 w-px bg-white/10" />
                     <div>
                       <div className="font-semibold text-white">
                         {currentUserRank.display_name || currentUserRank.username}
                       </div>
-                      <div className="text-sm text-gray-400">
+                      <div className="text-sm text-muted-foreground">
                         {getCategoryValue(currentUserRank)}
                       </div>
                     </div>
@@ -259,27 +209,27 @@ export default function LeaderboardPage() {
           </Tabs>
 
           {/* Time Period Buttons */}
-          <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2">
             <Button
-              variant={period === 'weekly' ? 'default' : 'outline'}
+                variant={period === 'd30' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setPeriod('weekly')}
+                onClick={() => setPeriod('d30')}
             >
-              This Week
+                30D
             </Button>
             <Button
-              variant={period === 'monthly' ? 'default' : 'outline'}
+                variant={period === 'd60' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setPeriod('monthly')}
+                onClick={() => setPeriod('d60')}
             >
-              This Month
+                60D
             </Button>
             <Button
-              variant={period === 'all_time' ? 'default' : 'outline'}
+                variant={period === 'd90' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setPeriod('all_time')}
+                onClick={() => setPeriod('d90')}
             >
-              All Time
+                90D
             </Button>
           </div>
         </div>
@@ -292,10 +242,10 @@ export default function LeaderboardPage() {
               <Card className="bg-gradient-to-br from-gray-700/20 to-gray-800/20 border-gray-400/30 h-full">
                 <CardContent className="p-6">
                   <div className="flex flex-col items-center text-center">
-                    <Medal className="h-12 w-12 text-gray-300 mb-4" />
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center mb-4">
+                    <Medal className="h-12 w-12 text-muted-foreground mb-4" />
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-muted to-muted/60 flex items-center justify-center mb-4">
                       {leaderboard[1].avatar_url ? (
-                        <img src={leaderboard[1].avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
+                        <Image src={leaderboard[1].avatar_url} alt="" width={80} height={80} className="w-full h-full rounded-full object-cover" />
                       ) : (
                         <Users className="h-10 w-10 text-white" />
                       )}
@@ -303,8 +253,8 @@ export default function LeaderboardPage() {
                     <h3 className="font-bold text-lg mb-1">
                       {leaderboard[1].display_name || leaderboard[1].username}
                     </h3>
-                    <p className="text-sm text-gray-400 mb-3">@{leaderboard[1].username}</p>
-                    <div className="text-3xl font-bold text-gray-300 mb-2">
+                    <p className="text-sm text-muted-foreground mb-3">@{leaderboard[1].username}</p>
+                    <div className="text-3xl font-bold text-muted-foreground mb-2">
                       {getCategoryValue(leaderboard[1])}
                     </div>
                     <Link href={`/profile/${leaderboard[1].username}`}>
@@ -326,7 +276,7 @@ export default function LeaderboardPage() {
                     <div className="text-yellow-400 font-bold text-sm mb-2">🏆 CHAMPION</div>
                     <div className="w-24 h-24 rounded-full bg-gradient-to-br from-yellow-400 to-amber-600 flex items-center justify-center mb-4 ring-4 ring-yellow-400/30">
                       {leaderboard[0].avatar_url ? (
-                        <img src={leaderboard[0].avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
+                        <Image src={leaderboard[0].avatar_url} alt="" width={96} height={96} className="w-full h-full rounded-full object-cover" />
                       ) : (
                         <Users className="h-12 w-12 text-white" />
                       )}
@@ -334,7 +284,7 @@ export default function LeaderboardPage() {
                     <h3 className="font-bold text-xl mb-1">
                       {leaderboard[0].display_name || leaderboard[0].username}
                     </h3>
-                    <p className="text-sm text-gray-400 mb-3">@{leaderboard[0].username}</p>
+                    <p className="text-sm text-muted-foreground mb-3">@{leaderboard[0].username}</p>
                     <div className="text-4xl font-bold text-yellow-400 mb-2">
                       {getCategoryValue(leaderboard[0])}
                     </div>
@@ -356,7 +306,7 @@ export default function LeaderboardPage() {
                     <Medal className="h-12 w-12 text-amber-600 mb-4" />
                     <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center mb-4">
                       {leaderboard[2].avatar_url ? (
-                        <img src={leaderboard[2].avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
+                        <Image src={leaderboard[2].avatar_url} alt="" width={80} height={80} className="w-full h-full rounded-full object-cover" />
                       ) : (
                         <Users className="h-10 w-10 text-white" />
                       )}
@@ -364,7 +314,7 @@ export default function LeaderboardPage() {
                     <h3 className="font-bold text-lg mb-1">
                       {leaderboard[2].display_name || leaderboard[2].username}
                     </h3>
-                    <p className="text-sm text-gray-400 mb-3">@{leaderboard[2].username}</p>
+                    <p className="text-sm text-muted-foreground mb-3">@{leaderboard[2].username}</p>
                     <div className="text-3xl font-bold text-amber-400 mb-2">
                       {getCategoryValue(leaderboard[2])}
                     </div>
@@ -379,7 +329,7 @@ export default function LeaderboardPage() {
         )}
 
         {/* Rankings Table */}
-        <Card className="bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700">
+        <Card className="bg-card border-border">
           <CardHeader>
             <CardTitle>Rankings</CardTitle>
             <CardDescription>
@@ -390,9 +340,7 @@ export default function LeaderboardPage() {
             <div className="space-y-2">
               {leaderboard.slice(3).map((entry) => (
                 <Link key={entry.user_id} href={`/profile/${entry.username}`}>
-                  <div className={`flex items-center gap-4 p-4 rounded-lg hover:bg-white/5 transition-all cursor-pointer hover:scale-[1.02] ${
-                    currentUser && entry.user_id === currentUser.id ? 'bg-cyan-500/10 border border-cyan-500/30' : 'hover:border hover:border-cyan-500/20'
-                  }`}>
+                  <div className="flex items-center gap-4 p-4 rounded-lg hover:bg-white/5 transition-all cursor-pointer hover:scale-[1.02] hover:border hover:border-cyan-500/20">
                     {/* Rank */}
                     <div className="w-12 text-center flex-shrink-0">
                       {getRankIcon(entry.rank)}
@@ -401,7 +349,7 @@ export default function LeaderboardPage() {
                     {/* Avatar */}
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center flex-shrink-0">
                       {entry.avatar_url ? (
-                        <img src={entry.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
+                        <Image src={entry.avatar_url} alt="" width={48} height={48} className="w-full h-full rounded-full object-cover" />
                       ) : (
                         <Users className="h-6 w-6 text-white" />
                       )}
@@ -412,7 +360,7 @@ export default function LeaderboardPage() {
                       <div className="font-semibold truncate">
                         {entry.display_name || entry.username}
                       </div>
-                      <div className="text-sm text-gray-400 truncate">@{entry.username}</div>
+                      <div className="text-sm text-muted-foreground truncate">@{entry.username}</div>
                     </div>
 
                     {/* Badge */}
@@ -420,41 +368,19 @@ export default function LeaderboardPage() {
                       {getRankBadge(entry.rank)}
                     </div>
 
-                    {/* Rank Change Indicator */}
-                    {entry.rank_change !== undefined && entry.rank_change !== 0 && (
-                      <div className="flex items-center gap-1">
-                        {entry.rank_change > 0 ? (
-                          <>
-                            <ChevronUp className="h-4 w-4 text-green-400" />
-                            <span className="text-green-400 font-semibold text-sm">{entry.rank_change}</span>
-                          </>
-                        ) : (
-                          <>
-                            <ChevronDown className="h-4 w-4 text-red-400" />
-                            <span className="text-red-400 font-semibold text-sm">{Math.abs(entry.rank_change)}</span>
-                          </>
-                        )}
-                      </div>
-                    )}
-                    {entry.rank_change === 0 && (
-                      <div className="w-8 flex items-center justify-center">
-                        <Minus className="h-4 w-4 text-gray-500" />
-                      </div>
-                    )}
-
                     {/* Stats */}
                     <div className="flex items-center gap-6 text-sm">
                       <div className="text-right">
                         <div className="font-bold text-white">{getCategoryValue(entry)}</div>
-                        <div className="text-xs text-gray-400">{getCategoryLabel()}</div>
+                        <div className="text-xs text-muted-foreground">{getCategoryLabel()}</div>
                       </div>
                       <div className="text-right hidden lg:block">
                         <div className="font-semibold text-white">{entry.total_positions}</div>
-                        <div className="text-xs text-gray-400">Positions</div>
+                        <div className="text-xs text-muted-foreground">Positions</div>
                       </div>
                       <div className="text-right hidden lg:block">
                         <div className="font-semibold text-white">{entry.follower_count}</div>
-                        <div className="text-xs text-gray-400">Followers</div>
+                        <div className="text-xs text-muted-foreground">Followers</div>
                       </div>
                     </div>
                   </div>
@@ -470,7 +396,7 @@ export default function LeaderboardPage() {
             <CardContent className="p-8 text-center">
               <Trophy className="h-12 w-12 text-cyan-400 mx-auto mb-4" />
               <h2 className="text-2xl font-bold mb-2">Join the Competition</h2>
-              <p className="text-gray-400 mb-6 max-w-2xl mx-auto">
+              <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
                 Start tracking your trades and compete with other traders. Sign up now and climb the leaderboard!
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -484,7 +410,15 @@ export default function LeaderboardPage() {
                     Login
                   </Button>
                 </Link>
+                <a href="https://discord.gg/TzjfyPMw" target="_blank" rel="noopener noreferrer">
+                  <Button size="lg" variant="secondary">
+                    Join Discord (Free)
+                  </Button>
+                </a>
               </div>
+              <p className="text-sm text-muted-foreground mt-4">
+                Want feedback and trade breakdowns? Discord is where the daily discussion happens.
+              </p>
             </CardContent>
           </Card>
         )}
