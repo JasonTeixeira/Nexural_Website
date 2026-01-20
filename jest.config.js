@@ -8,7 +8,8 @@ const createJestConfig = nextJest({
 // Add any custom config to be passed to Jest
 const customJestConfig = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
-  testEnvironment: 'jest-environment-jsdom',
+  // We test Next.js route handlers heavily; those run on the server runtime.
+  testEnvironment: 'node',
   moduleNameMapper: {
     '^@/components/(.*)$': '<rootDir>/components/$1',
     '^@/lib/(.*)$': '<rootDir>/lib/$1',
@@ -29,6 +30,8 @@ const customJestConfig = {
   testMatch: [
     '<rootDir>/tests/**/*.test.{js,jsx,ts,tsx}',
     '<rootDir>/components/**/*.test.{js,jsx,ts,tsx}',
+    '<rootDir>/lib/**/__tests__/**/*.test.{js,jsx,ts,tsx}',
+    '<rootDir>/app/**/__tests__/**/*.test.{js,jsx,ts,tsx}',
   ],
   testPathIgnorePatterns: [
     '<rootDir>/node_modules/',

@@ -39,6 +39,20 @@ describe('/api/newsletter/unsubscribe', () => {
           }
         }
 
+        if (table === 'newsletter_sends') {
+          return {
+            select: () => ({
+              eq: () => ({
+                order: () => ({
+                  limit: () => ({
+                    maybeSingle: async () => ({ data: { id: 'send_last' }, error: null }),
+                  }),
+                }),
+              }),
+            }),
+          }
+        }
+
         if (table === 'newsletter_events') {
           return {
             insert: async (row: any) => {
@@ -67,4 +81,3 @@ describe('/api/newsletter/unsubscribe', () => {
     expect(events[0].event_type).toBe('unsubscribed')
   })
 })
-

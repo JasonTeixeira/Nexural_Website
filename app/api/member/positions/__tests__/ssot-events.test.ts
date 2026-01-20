@@ -7,18 +7,28 @@ function makeSupabaseMock() {
   const select = jest.fn().mockReturnThis()
   const eq = jest.fn().mockReturnThis()
   const single = jest.fn().mockResolvedValue({ data: { id: 'p1', user_id: 'u1', status: 'open' }, error: null })
+  const insertSelectSingle = jest.fn().mockResolvedValue({
+    data: { id: 'p_new', user_id: 'u1', status: 'open', opened_at: new Date().toISOString() },
+    error: null,
+  })
 
   const from = jest.fn().mockImplementation((table: string) => {
     if (table === 'position_events') {
       return { insert }
     }
     if (table === 'positions') {
-      return { insert, update, select, eq, single }
+      return {
+        insert: () => ({ select: () => ({ single: insertSelectSingle }) }),
+        update,
+        select,
+        eq,
+        single,
+      }
     }
     return { insert, update, select, eq, single }
   })
 
-  return { from, __spies: { insert, update, select, eq, single } }
+  return { from, __spies: { insert, update, select, eq, single, insertSelectSingle } }
 }
 
 jest.mock('@/lib/auth/server-helpers', () => ({
@@ -33,16 +43,8 @@ jest.mock('@/lib/supabase/server', () => ({
   createClient: async () => (global as any).__supabaseMock,
 }))
 
-jest.mock('@/lib/trading-ledger/repository-member-positions', () => ({
-  MemberPositionsLedgerRepository: class {
-    async listPositions() {
-      return { positions: [] }
-    }
-    async getPositionById(id: string) {
-      return { position: { id } }
-    }
-  },
-}))
+// NOTE: In this baseline branch the trading-ledger module is not present.
+// This test focuses on verifying event emission via the DB (position_events).
 
 describe('SSOT member position event spine', () => {
   beforeEach(() => {
@@ -58,9 +60,9 @@ describe('SSOT member position event spine', () => {
 
     await POST(req as any)
     const supabase = (global as any).__supabaseMock
-    expect(supabase.from).toHaveBeenCalledWith('position_events')
-    expect(supabase.__spies.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ event_type: 'position.opened' })
-    )
+
+    // We should have inserted an event row.
+    const eventCall = supabase.__spies.insert.mock.calls.find((c: any[]) => c?.[0]?.event_type === 'position.opened')
+    expect(eventCall).toBeTruthy()
   })
 })
