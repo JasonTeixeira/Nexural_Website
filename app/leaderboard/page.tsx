@@ -41,6 +41,8 @@ export default function LeaderboardPage() {
   const [category, setCategory] = useState<LeaderboardCategory>('returns')
   const [period, setPeriod] = useState<TimePeriod>('d30')
   const [currentUserRank, setCurrentUserRank] = useState<LeaderboardEntry | null>(null)
+  // TODO(SSOT): wire real auth user context
+  const currentUser: LeaderboardEntry | null = null
 
   const timeframeDays = useMemo(() => {
     if (period === 'd60') return 60

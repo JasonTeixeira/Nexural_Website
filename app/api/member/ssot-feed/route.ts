@@ -98,8 +98,8 @@ export async function GET(req: NextRequest) {
 
   const items = baseEvents
     .map((e: any) => {
-      const adminPos = adminById.get(e.position_id) || null
-      const memberPos = memberById.get(e.position_id) || null
+      const adminPos: any = adminById.get(e.position_id) || null
+      const memberPos: any = memberById.get(e.position_id) || null
       const ownerType = adminPos ? 'admin' : memberPos ? 'member' : 'unknown'
 
       // Visibility rules (SSOT):

@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
 
   const profileById = new Map((profiles || []).map((p: any) => [p.user_id, p]))
   const items = (rows || []).map((r: any, idx: number) => {
-    const p = profileById.get(r.user_id) || {}
+    const p: any = profileById.get(r.user_id) || null
     return {
       rank: idx + 1,
       user_id: r.user_id,

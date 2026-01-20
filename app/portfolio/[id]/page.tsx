@@ -22,7 +22,7 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
-import { PortfolioHeatmap, toHeatmapStatus } from '@/components/positions/portfolio-heatmap'
+import { PortfolioHeatmap } from '@/components/positions/portfolio-heatmap'
 import { useBlocking } from '@/hooks/use-blocking'
 
 interface Portfolio {
@@ -401,7 +401,7 @@ export default function PortfolioDetailPage() {
               <PortfolioHeatmap positions={openPositions.map(p => ({
                 ...p,
                 ticker: p.symbol,
-                status: toHeatmapStatus(p.status),
+                status: p.status as any,
                 unrealized_pnl: p.unrealized_pnl || 0,
                 unrealized_pnl_pct: p.unrealized_pnl_pct || 0
               }))} />

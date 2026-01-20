@@ -57,13 +57,16 @@ export async function POST(request: NextRequest) {
 
     // Best-effort event log. We don't always have a send_id here.
     if (updated?.id) {
-      await supabase.from('newsletter_events').insert({
+      const { error: evtErr } = await supabase.from('newsletter_events').insert({
         send_id: lastSendId,
         event_type: 'unsubscribed',
         url: null,
         ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || null,
         user_agent: request.headers.get('user-agent') || null,
-      } as any).catch(() => {})
+      } as any)
+      if (evtErr) {
+        // swallow (best-effort)
+      }
     }
 
     return NextResponse.json({ success: true })
