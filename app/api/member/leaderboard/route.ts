@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
   // Rollups are readable by authenticated users; we additionally enforce eligibility.
   const { data: rows, error } = await supabase
     .from('leaderboard_rollups')
-    .select('user_id,timeframe_days,return_pct,total_pnl,total_capital_at_risk,win_rate,closed_positions,eligible,computed_at')
+    .select('user_id,timeframe_days,return_pct,total_pnl,total_capital_at_risk,win_rate,closed_positions,eligible,approximate,computed_at')
     .eq('timeframe_days', timeframe)
     .eq('eligible', true)
     .order('return_pct', { ascending: false })
@@ -61,10 +61,10 @@ export async function GET(req: NextRequest) {
       total_capital_at_risk: Number(r.total_capital_at_risk || 0),
       win_rate: Number(r.win_rate || 0),
       closed_positions: Number(r.closed_positions || 0),
+      approximate: r.approximate === true,
       computed_at: r.computed_at,
     }
   })
 
   return NextResponse.json({ timeframe_days: timeframe, items })
 }
-

@@ -50,6 +50,17 @@ export async function POST(request: Request) {
 
       const hasPublicPortfolio = (portfolios || []).length > 0
 
+      // Snapshot availability check for open-position inclusion.
+      // If missing, we mark rollup as approximate per SSOT.
+      const { data: snapshots } = await svc
+        .from('portfolio_snapshots')
+        .select('id')
+        .eq('user_id', u.user_id)
+        .gte('snapshot_at', windowStart.toISOString().slice(0, 10))
+        .limit(1)
+
+      const approximate = (snapshots || []).length === 0
+
       // Positions in timeframe (v1: realized only for positions closed within window)
       const { data: positions } = await svc
         .from('positions')
@@ -102,6 +113,7 @@ export async function POST(request: Request) {
         has_public_portfolio: hasPublicPortfolio,
         profile_complete: profileComplete,
         eligible,
+        approximate,
       } as any)
 
       if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 })
