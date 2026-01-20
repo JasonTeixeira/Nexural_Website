@@ -54,12 +54,24 @@ export async function POST(request: Request) {
       // If missing, we mark rollup as approximate per SSOT.
       const { data: snapshots } = await svc
         .from('portfolio_snapshots')
-        .select('id')
+        .select('id,portfolio_id,snapshot_at,total_value')
         .eq('user_id', u.user_id)
         .gte('snapshot_at', windowStart.toISOString().slice(0, 10))
-        .limit(1)
+        .order('snapshot_at', { ascending: true })
 
-      const approximate = (snapshots || []).length === 0
+      const approximate = (snapshots || []).length < 2
+
+      // v1.1 unrealized delta proxy (SSOT):
+      // If we have snapshots inside the window, approximate the unrealized delta as:
+      //   last.total_value - first.total_value
+      // This is portfolio-level and does not require per-position marks.
+      // NOTE: This assumes total_value is comparable and snapshot cadence is reasonable.
+      let unrealizedDelta = 0
+      if (!approximate) {
+        const first = snapshots![0]
+        const last = snapshots![snapshots!.length - 1]
+        unrealizedDelta = Number(last.total_value || 0) - Number(first.total_value || 0)
+      }
 
       // Positions in timeframe (v1: realized only for positions closed within window)
       const { data: positions } = await svc
@@ -94,6 +106,9 @@ export async function POST(request: Request) {
         totalRisk += Math.abs(entry * qty)
         if (pnl > 0) wins++
       }
+
+      // Add unrealized delta proxy (if available)
+      totalPnl += unrealizedDelta
 
       const returnPct = totalRisk > 0 ? (totalPnl / totalRisk) * 100 : 0
       const winRate = closed.length > 0 ? (wins / closed.length) * 100 : 0
