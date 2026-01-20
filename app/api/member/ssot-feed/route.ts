@@ -83,6 +83,16 @@ export async function GET(req: NextRequest) {
       : Promise.resolve({ data: [], error: null } as any),
   ])
 
+  // Load global privacy mode for any member position owners we might emit.
+  const memberOwnerIds = Array.from(new Set((memberPositionsRes.data || []).map((p: any) => p.user_id).filter(Boolean)))
+  const { data: memberOwners } = memberOwnerIds.length
+    ? await supabase
+        .from('user_profiles')
+        .select('user_id,portfolio_visibility_mode')
+        .in('user_id', memberOwnerIds)
+    : ({ data: [] } as any)
+  const memberModeById = new Map((memberOwners || []).map((p: any) => [p.user_id, p.portfolio_visibility_mode]))
+
   const adminById = new Map((adminPositionsRes.data || []).map((p: any) => [p.id, p]))
   const memberById = new Map((memberPositionsRes.data || []).map((p: any) => [p.id, p]))
 
@@ -98,6 +108,8 @@ export async function GET(req: NextRequest) {
       // - Additionally, for "following" experience we restrict member events to followed accounts.
       if (ownerType === 'member') {
         if (!memberPos || memberPos.is_public !== true) return null
+        // SSOT: global mode overrides per-position public flag.
+        if (memberPos.user_id && memberModeById.get(memberPos.user_id) === 'private') return null
         if (memberPos.user_id && !followingIds.includes(memberPos.user_id)) return null
       }
 
