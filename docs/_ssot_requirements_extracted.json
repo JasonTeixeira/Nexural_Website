@@ -1,0 +1,331 @@
+{
+  "generated_at": "2026-01-20T17:13:53.574Z",
+  "count": 65,
+  "items": [
+    {
+      "file": "docs/ARCHITECTURE.md",
+      "line": 9,
+      "text": "The architecture must enforce:"
+    },
+    {
+      "file": "docs/DASHBOARDS.md",
+      "line": 5,
+      "text": "- what information it must show"
+    },
+    {
+      "file": "docs/DASHBOARDS.md",
+      "line": 20,
+      "text": "#### A) Trade publishing (Tier‑1)"
+    },
+    {
+      "file": "docs/DASHBOARDS.md",
+      "line": 31,
+      "text": "#### B) Admin trade analytics (Tier‑1)"
+    },
+    {
+      "file": "docs/DASHBOARDS.md",
+      "line": 50,
+      "text": "Admin trade actions must result in:"
+    },
+    {
+      "file": "docs/DASHBOARDS.md",
+      "line": 75,
+      "text": "#### A) Admin trades module (Tier‑1)"
+    },
+    {
+      "file": "docs/DASHBOARDS.md",
+      "line": 84,
+      "text": "#### C) Personal performance module (Tier‑1)"
+    },
+    {
+      "file": "docs/DASHBOARDS.md",
+      "line": 89,
+      "text": "#### D) Notifications module (Tier‑1)"
+    },
+    {
+      "file": "docs/DEPRECATION_DELETE_LIST.md",
+      "line": 75,
+      "text": "These must be evaluated against the PRD scope. If out of scope, archive or delete after traffic confirmation."
+    },
+    {
+      "file": "docs/EVENT_TAXONOMY.md",
+      "line": 70,
+      "text": "- Backfilled/imported positions must emit:"
+    },
+    {
+      "file": "docs/FEATURE_CATALOG.md",
+      "line": 13,
+      "text": "> Note: Tier‑1 features are expanded in Phase 4 deep specs."
+    },
+    {
+      "file": "docs/FEED_ALERTS_SPEC.md",
+      "line": 1,
+      "text": "# Feed & Alerts Spec (Tier‑1 SSOT)"
+    },
+    {
+      "file": "docs/FEED_ALERTS_SPEC.md",
+      "line": 35,
+      "text": "**Tier‑1 feed items (must exist):**"
+    },
+    {
+      "file": "docs/FEED_ALERTS_SPEC.md",
+      "line": 72,
+      "text": "v1 required:"
+    },
+    {
+      "file": "docs/FEED_ALERTS_SPEC.md",
+      "line": 104,
+      "text": "Alerts must include:"
+    },
+    {
+      "file": "docs/FEED_ALERTS_SPEC.md",
+      "line": 117,
+      "text": "The system must remain valuable and not noisy."
+    },
+    {
+      "file": "docs/FEED_ALERTS_SPEC.md",
+      "line": 130,
+      "text": "Alerts must be reliable at 25k members."
+    },
+    {
+      "file": "docs/FEED_ALERTS_SPEC.md",
+      "line": 136,
+      "text": "- Notification delivery must support retries."
+    },
+    {
+      "file": "docs/KEEP_MIGRATE_DELETE.md",
+      "line": 5,
+      "text": "## Deletion gates (must satisfy all)"
+    },
+    {
+      "file": "docs/LEADERBOARD_DISCOVERY_SPEC.md",
+      "line": 1,
+      "text": "# Leaderboards & Discovery Spec (Tier‑1 SSOT)"
+    },
+    {
+      "file": "docs/LEADERBOARD_DISCOVERY_SPEC.md",
+      "line": 22,
+      "text": "They must be:"
+    },
+    {
+      "file": "docs/LEADERBOARD_DISCOVERY_SPEC.md",
+      "line": 30,
+      "text": "To appear on leaderboards, a member must:"
+    },
+    {
+      "file": "docs/LEADERBOARD_DISCOVERY_SPEC.md",
+      "line": 93,
+      "text": "Backfilled/imported positions are allowed but must be flagged."
+    },
+    {
+      "file": "docs/LEADERBOARD_DISCOVERY_SPEC.md",
+      "line": 100,
+      "text": "Edits are allowed but must emit amendment events."
+    },
+    {
+      "file": "docs/LEADERBOARD_DISCOVERY_SPEC.md",
+      "line": 118,
+      "text": "Leaderboards must be computed via rollups:"
+    },
+    {
+      "file": "docs/LEADERBOARD_DISCOVERY_SPEC.md",
+      "line": 122,
+      "text": "Rollups must be reproducible from the ledger."
+    },
+    {
+      "file": "docs/LEADERBOARD_DISCOVERY_SPEC.md",
+      "line": 152,
+      "text": "- Clicking a trader opens their public portfolio (member-only if required)."
+    },
+    {
+      "file": "docs/MARKETPLACE_SPEC.md",
+      "line": 1,
+      "text": "# Marketplace Spec (Tier‑1 SSOT)"
+    },
+    {
+      "file": "docs/MARKETPLACE_SPEC.md",
+      "line": 3,
+      "text": "Marketplace is secondary to the core trading-social loop, but must be professional."
+    },
+    {
+      "file": "docs/MARKETPLACE_SPEC.md",
+      "line": 29,
+      "text": "Seller onboarding must capture:"
+    },
+    {
+      "file": "docs/MARKETPLACE_SPEC.md",
+      "line": 62,
+      "text": "Entitlements must support:"
+    },
+    {
+      "file": "docs/MARKETPLACE_SPEC.md",
+      "line": 98,
+      "text": "Marketplace must be robust:"
+    },
+    {
+      "file": "docs/NEWSLETTER_SPEC.md",
+      "line": 1,
+      "text": "# Newsletter Spec (Tier‑1 SSOT)"
+    },
+    {
+      "file": "docs/NEWSLETTER_SPEC.md",
+      "line": 35,
+      "text": "Capture must support:"
+    },
+    {
+      "file": "docs/NEWSLETTER_SPEC.md",
+      "line": 67,
+      "text": "Admin must be able to:"
+    },
+    {
+      "file": "docs/NEWSLETTER_SPEC.md",
+      "line": 102,
+      "text": "Email sending must support:"
+    },
+    {
+      "file": "docs/OPS_RUNBOOK.md",
+      "line": 91,
+      "text": "must remain a simple git revert)."
+    },
+    {
+      "file": "docs/OPS_RUNBOOK.md",
+      "line": 128,
+      "text": "Must define:"
+    },
+    {
+      "file": "docs/PERMISSIONS_PRIVACY.md",
+      "line": 68,
+      "text": "- Must be explicitly flagged as backfilled/imported."
+    },
+    {
+      "file": "docs/PERMISSIONS_PRIVACY.md",
+      "line": 69,
+      "text": "- Blueprint must specify whether backfilled positions:"
+    },
+    {
+      "file": "docs/PRD.md",
+      "line": 59,
+      "text": "- Backfilled/imported data must be flagged."
+    },
+    {
+      "file": "docs/README.md",
+      "line": 5,
+      "text": "**Rule:** If code and docs disagree, the docs win — and the code must be refactored to match."
+    },
+    {
+      "file": "docs/README.md",
+      "line": 11,
+      "text": "4) Tier‑1 Deep Specs"
+    },
+    {
+      "file": "docs/REFERRALS_POINTS_SPEC.md",
+      "line": 1,
+      "text": "# Referrals & Points Spec (Tier‑1 SSOT)"
+    },
+    {
+      "file": "docs/SSOT_DONE_CHECKLIST.md",
+      "line": 1,
+      "text": "# SSOT “Definition of Done” Checklist"
+    },
+    {
+      "file": "docs/SSOT_DONE_CHECKLIST.md",
+      "line": 12,
+      "text": "- [ ] Onboarding gate is explicit (follow admin required)"
+    },
+    {
+      "file": "docs/SSOT_DONE_CHECKLIST.md",
+      "line": 21,
+      "text": "## 3) Tier‑1 deep specs complete"
+    },
+    {
+      "file": "docs/SSOT_DONE_CHECKLIST.md",
+      "line": 37,
+      "text": "- [ ] Acceptance criteria exist for each phase"
+    },
+    {
+      "file": "docs/TRADING_LEDGER_SPEC.md",
+      "line": 1,
+      "text": "# Trading Ledger Spec (Tier‑1 SSOT)"
+    },
+    {
+      "file": "docs/TRADING_LEDGER_SPEC.md",
+      "line": 35,
+      "text": "Minimum required fields:"
+    },
+    {
+      "file": "docs/TRADING_LEDGER_SPEC.md",
+      "line": 44,
+      "text": "Additional required (to remove ambiguity):"
+    },
+    {
+      "file": "docs/TRADING_LEDGER_SPEC.md",
+      "line": 59,
+      "text": "Each leg must define:"
+    },
+    {
+      "file": "docs/TRADING_LEDGER_SPEC.md",
+      "line": 67,
+      "text": "Additional required (to remove ambiguity):"
+    },
+    {
+      "file": "docs/TRADING_LEDGER_SPEC.md",
+      "line": 69,
+      "text": "- `underlying_symbol` must match the parent position"
+    },
+    {
+      "file": "docs/TRADING_LEDGER_SPEC.md",
+      "line": 75,
+      "text": "Required lifecycle events:"
+    },
+    {
+      "file": "docs/TRADING_LEDGER_SPEC.md",
+      "line": 79,
+      "text": "Required integrity event:"
+    },
+    {
+      "file": "docs/TRADING_LEDGER_SPEC.md",
+      "line": 87,
+      "text": "Public can see admin trades but **must not see**:"
+    },
+    {
+      "file": "docs/TRADING_LEDGER_SPEC.md",
+      "line": 112,
+      "text": "Any edit that changes one of these must emit `position.amended`:"
+    },
+    {
+      "file": "docs/TRADING_LEDGER_SPEC.md",
+      "line": 124,
+      "text": "The amendment must include:"
+    },
+    {
+      "file": "docs/TRADING_LEDGER_SPEC.md",
+      "line": 140,
+      "text": "### 6.2 Required flags"
+    },
+    {
+      "file": "docs/TRADING_LEDGER_SPEC.md",
+      "line": 141,
+      "text": "Backfilled/imported positions must be flagged as:"
+    },
+    {
+      "file": "docs/TRADING_LEDGER_SPEC.md",
+      "line": 145,
+      "text": "- Backfilled positions are allowed but must be flagged."
+    },
+    {
+      "file": "docs/TRADING_LEDGER_SPEC.md",
+      "line": 174,
+      "text": "- any adjustment must emit `position.amended`."
+    },
+    {
+      "file": "docs/TRADING_LEDGER_SPEC.md",
+      "line": 181,
+      "text": "## 8) Required outputs for downstream systems"
+    },
+    {
+      "file": "docs/TRADING_LEDGER_SPEC.md",
+      "line": 182,
+      "text": "The ledger must support:"
+    }
+  ]
+}

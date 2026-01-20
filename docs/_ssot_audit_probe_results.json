@@ -1,0 +1,103 @@
+{
+  "generated_at": "2026-01-20T17:14:37.164Z",
+  "rows": [
+    {
+      "id": "onboarding_follow_admin",
+      "ssot": "docs/SSOT_DONE_CHECKLIST.md#1",
+      "pattern": "Follow Admin",
+      "implemented": false,
+      "evidence": []
+    },
+    {
+      "id": "privacy_portfolio_visibility_mode",
+      "ssot": "docs/PERMISSIONS_PRIVACY.md",
+      "pattern": "portfolio_visibility_mode",
+      "implemented": false,
+      "evidence": []
+    },
+    {
+      "id": "event_spine_position_events",
+      "ssot": "docs/EVENT_TAXONOMY.md",
+      "pattern": "position_events",
+      "implemented": false,
+      "evidence": []
+    },
+    {
+      "id": "event_opened",
+      "ssot": "docs/EVENT_TAXONOMY.md",
+      "pattern": "position.opened",
+      "implemented": false,
+      "evidence": []
+    },
+    {
+      "id": "event_closed",
+      "ssot": "docs/EVENT_TAXONOMY.md",
+      "pattern": "position.closed",
+      "implemented": false,
+      "evidence": []
+    },
+    {
+      "id": "event_amended",
+      "ssot": "docs/EVENT_TAXONOMY.md",
+      "pattern": "position.amended",
+      "implemented": false,
+      "evidence": []
+    },
+    {
+      "id": "feed_ssot",
+      "ssot": "docs/FEED_ALERTS_SPEC.md",
+      "pattern": "/api/member/ssot-feed",
+      "implemented": false,
+      "evidence": []
+    },
+    {
+      "id": "alerts_cron",
+      "ssot": "docs/FEED_ALERTS_SPEC.md",
+      "pattern": "ssot-alerts",
+      "implemented": false,
+      "evidence": []
+    },
+    {
+      "id": "leaderboard_rollups",
+      "ssot": "docs/LEADERBOARD_DISCOVERY_SPEC.md",
+      "pattern": "leaderboard_rollups",
+      "implemented": false,
+      "evidence": []
+    },
+    {
+      "id": "leaderboard_cron",
+      "ssot": "docs/LEADERBOARD_DISCOVERY_SPEC.md",
+      "pattern": "ssot-leaderboard-rollups",
+      "implemented": false,
+      "evidence": []
+    },
+    {
+      "id": "referrals_api",
+      "ssot": "docs/REFERRALS_POINTS_SPEC.md",
+      "pattern": "/api/member/referrals",
+      "implemented": false,
+      "evidence": []
+    },
+    {
+      "id": "referrals_cron",
+      "ssot": "docs/REFERRALS_POINTS_SPEC.md",
+      "pattern": "ssot-referral-awards",
+      "implemented": false,
+      "evidence": []
+    },
+    {
+      "id": "newsletter_unsubscribe",
+      "ssot": "docs/NEWSLETTER_SPEC.md",
+      "pattern": "/api/newsletter/unsubscribe",
+      "implemented": false,
+      "evidence": []
+    },
+    {
+      "id": "newsletter_send_v2",
+      "ssot": "docs/NEWSLETTER_SPEC.md",
+      "pattern": "admin/newsletter/send-v2",
+      "implemented": false,
+      "evidence": []
+    }
+  ]
+}
