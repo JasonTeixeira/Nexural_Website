@@ -40,6 +40,8 @@ export async function POST(req: NextRequest) {
     const contentHtml = String(body.html || body.content || '').trim()
     const subscribers = Array.isArray(body.subscribers) ? body.subscribers : []
     const fromEmail = String(body.from || 'Nexural Trading <onboarding@resend.dev>')
+    const campaignIdRaw = body.campaignId
+    const campaignId = campaignIdRaw ? String(campaignIdRaw) : null
 
     if (!subject) return NextResponse.json({ error: 'subject required' }, { status: 400 })
     if (!contentHtml) return NextResponse.json({ error: 'html/content required' }, { status: 400 })
@@ -67,12 +69,18 @@ export async function POST(req: NextRequest) {
       }
 
       // Create send row so we can embed open tracking.
+      // SSOT: sending must be idempotent. If campaignId is provided, we rely on
+      // UNIQUE(campaign_id, subscriber_id) to prevent duplicates.
       const { data: sendRow, error: sendErr } = await supabase
         .from('newsletter_sends')
-        .insert({
-          subscriber_id: subscriberId,
-          status: 'queued',
-        })
+        .upsert(
+          {
+            campaign_id: campaignId,
+            subscriber_id: subscriberId,
+            status: 'queued',
+          },
+          { onConflict: campaignId ? 'campaign_id,subscriber_id' : 'id' }
+        )
         .select('id')
         .single()
 
