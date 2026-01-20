@@ -21,15 +21,10 @@ export const maxDuration = 300 // 5 minutes
 
 export async function GET(request: NextRequest) {
   try {
-    // Verify cron secret to prevent unauthorized access
-    const authHeader = request.headers.get('authorization')
-    const cronSecret = process.env.CRON_SECRET
-    
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+    // SSOT: standardize cron auth on x-cron-token
+    const token = request.headers.get('x-cron-token')
+    if (!process.env.CRON_SECRET || token !== process.env.CRON_SECRET) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     
     console.log('🚀 Newsletter cron job started')
