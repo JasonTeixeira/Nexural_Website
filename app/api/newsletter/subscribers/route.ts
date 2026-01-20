@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { requireAdmin } from '@/lib/auth/admin'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -9,8 +10,13 @@ const supabase = createClient(
 // Admin endpoint to get newsletter subscribers
 export async function GET(request: NextRequest) {
   try {
+    const admin = await requireAdmin(['owner', 'support'])
+    if (!admin.ok) {
+      return NextResponse.json({ error: admin.error }, { status: admin.status })
+    }
+
     const { searchParams } = new URL(request.url)
-    const status = searchParams.get('status') || 'active'
+    const status = searchParams.get('status') || 'subscribed'
     const limit = parseInt(searchParams.get('limit') || '100')
     const offset = parseInt(searchParams.get('offset') || '0')
 
@@ -50,7 +56,7 @@ export async function GET(request: NextRequest) {
         hasMore: (count || 0) > offset + limit
       },
       stats: {
-        active: statsCount.active || 0,
+        subscribed: statsCount.subscribed || 0,
         unsubscribed: statsCount.unsubscribed || 0,
         total: stats?.length || 0
       }
@@ -68,6 +74,11 @@ export async function GET(request: NextRequest) {
 // Unsubscribe endpoint
 export async function DELETE(request: NextRequest) {
   try {
+    const admin = await requireAdmin(['owner', 'support'])
+    if (!admin.ok) {
+      return NextResponse.json({ error: admin.error }, { status: admin.status })
+    }
+
     const { email } = await request.json()
 
     if (!email) {
