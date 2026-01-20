@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { enforceMemberEntitlement } from '@/lib/entitlements-api'
+import { enforceReferralConsumeRateLimit } from '@/lib/api-rate-limit'
 
 function randomCode(len = 8) {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -84,6 +85,10 @@ export async function POST(req: NextRequest) {
   const user = data.user
 
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  // Anti-fraud: throttle referral consumption attempts (SSOT minimum)
+  const rateLimited = await enforceReferralConsumeRateLimit(req, user.id)
+  if (rateLimited) return rateLimited as any
 
   // NOTE: referral attribution must work for newly signed-up users as well.
   // We intentionally DO NOT enforce paid entitlement here.
