@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
   const { data: profiles } = userIds.length
     ? await supabase
         .from('user_profiles')
-        .select('user_id,username,display_name,avatar_url,bio,follower_count,total_positions')
+        .select('user_id,username,display_name,avatar_url,bio,follower_count,total_positions,portfolio_visibility_mode')
         .in('user_id', userIds)
     : ({ data: [] } as any)
 
@@ -55,6 +55,7 @@ export async function GET(req: NextRequest) {
       bio: p.bio || null,
       follower_count: p.follower_count || 0,
       total_positions: p.total_positions || 0,
+      portfolio_visibility_mode: p.portfolio_visibility_mode || 'public',
       timeframe_days: r.timeframe_days,
       return_pct: Number(r.return_pct || 0),
       total_pnl: Number(r.total_pnl || 0),
@@ -66,5 +67,9 @@ export async function GET(req: NextRequest) {
     }
   })
 
-  return NextResponse.json({ timeframe_days: timeframe, items })
+  // SSOT: users in private global mode are not visible on leaderboards.
+  const filtered = items.filter((it: any) => it.portfolio_visibility_mode !== 'private')
+  const ranked = filtered.map((it: any, i: number) => ({ ...it, rank: i + 1 }))
+
+  return NextResponse.json({ timeframe_days: timeframe, items: ranked })
 }

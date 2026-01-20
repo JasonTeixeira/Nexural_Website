@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
   if (userIds.length) {
     const pr = await supabase
       .from('user_profiles')
-      .select('user_id,username,display_name,avatar_url,bio,follower_count,total_positions,strategy_tags')
+      .select('user_id,username,display_name,avatar_url,bio,follower_count,total_positions,strategy_tags,portfolio_visibility_mode')
       .in('user_id', userIds)
 
     profiles = pr.data || []
@@ -67,6 +67,7 @@ export async function GET(req: NextRequest) {
       follower_count: p.follower_count || 0,
       total_positions: p.total_positions || 0,
       strategy_tags: p.strategy_tags || [],
+      portfolio_visibility_mode: p.portfolio_visibility_mode || 'public',
       timeframe_days: r.timeframe_days,
       return_pct: Number(r.return_pct || 0),
       win_rate: Number(r.win_rate || 0),
@@ -74,6 +75,9 @@ export async function GET(req: NextRequest) {
       computed_at: r.computed_at,
     }
   })
+
+  // SSOT: users in private global mode are not discoverable.
+  items = items.filter((it: any) => it.portfolio_visibility_mode !== 'private')
 
   if (tag) {
     items = items.filter((it: any) => Array.isArray(it.strategy_tags) && it.strategy_tags.includes(tag))
@@ -84,4 +88,3 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({ timeframe_days: timeframe, items })
 }
-

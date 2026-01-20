@@ -29,7 +29,7 @@ export async function POST(request: Request) {
   // Candidate users: anyone with a profile (later: eligibility rules from spec)
   const { data: users, error: usersErr } = await svc
     .from('user_profiles')
-    .select('user_id,bio,strategy_tags')
+    .select('user_id,bio,strategy_tags,portfolio_visibility_mode')
     .eq('is_profile_public', true)
 
   if (usersErr) return NextResponse.json({ error: usersErr.message }, { status: 500 })
@@ -40,6 +40,7 @@ export async function POST(request: Request) {
     for (const u of users || []) {
       // Eligibility signals
       const profileComplete = !!(u.bio && String(u.bio).trim().length > 0)
+      const isPublicMode = (u as any).portfolio_visibility_mode !== 'private'
 
       const { data: portfolios } = await svc
         .from('portfolios')
@@ -113,7 +114,7 @@ export async function POST(request: Request) {
       const returnPct = totalRisk > 0 ? (totalPnl / totalRisk) * 100 : 0
       const winRate = closed.length > 0 ? (wins / closed.length) * 100 : 0
 
-      const eligible = hasPublicPortfolio && profileComplete
+      const eligible = hasPublicPortfolio && profileComplete && isPublicMode
 
       const { error: upErr } = await svc.from('leaderboard_rollups').upsert({
         user_id: u.user_id,
