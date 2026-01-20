@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -22,7 +22,8 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
-import { PortfolioHeatmap } from '@/components/positions/portfolio-heatmap'
+import { PortfolioHeatmap, toHeatmapStatus } from '@/components/positions/portfolio-heatmap'
+import { useBlocking } from '@/hooks/use-blocking'
 
 interface Portfolio {
   id: string
@@ -65,6 +66,7 @@ interface UserProfile {
   username: string
   display_name: string | null
   avatar_url: string | null
+  portfolio_visibility_mode?: 'public' | 'private'
 }
 
 export default function PortfolioDetailPage() {
@@ -80,12 +82,10 @@ export default function PortfolioDetailPage() {
   const [loading, setLoading] = useState(true)
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [isFollowing, setIsFollowing] = useState(false)
+  const [isFollowingPortfolio, setIsFollowingPortfolio] = useState(false)
+  const blocking = useBlocking()
 
-  useEffect(() => {
-    loadPortfolioData()
-  }, [portfolioId])
-
-  async function loadPortfolioData() {
+  const loadPortfolioData = useCallback(async () => {
     try {
       const supabase = createClient()
 
@@ -113,16 +113,29 @@ export default function PortfolioDetailPage() {
         return
       }
 
+      // Block enforcement (viewer has blocked the owner)
+      if (user && blocking.isBlocked(portfolioData.user_id)) {
+        console.error('Portfolio is blocked')
+        setLoading(false)
+        return
+      }
+
       setPortfolio(portfolioData)
 
       // Load owner profile
       const { data: profileData } = await supabase
         .from('user_profiles')
-        .select('user_id, username, display_name, avatar_url')
+        .select('user_id, username, display_name, avatar_url, portfolio_visibility_mode')
         .eq('user_id', portfolioData.user_id)
         .single()
 
       if (profileData) {
+        // SSOT: if owner is in private global mode, hide the portfolio for non-owners
+        if (profileData.portfolio_visibility_mode === 'private' && (!user || user.id !== profileData.user_id)) {
+          console.error('Owner is in private global mode')
+          setLoading(false)
+          return
+        }
         setOwner(profileData)
       }
 
@@ -136,6 +149,11 @@ export default function PortfolioDetailPage() {
           .single()
 
         setIsFollowing(!!followData)
+
+        // Check if following portfolio
+        const followRes = await fetch(`/api/portfolio/follow?portfolioId=${encodeURIComponent(portfolioId)}`)
+        const followJson = await followRes.json().catch(() => ({}))
+        if (followRes.ok) setIsFollowingPortfolio(!!followJson.following)
       }
 
       // Load positions
@@ -156,34 +174,51 @@ export default function PortfolioDetailPage() {
       console.error('Error loading portfolio:', error)
       setLoading(false)
     }
-  }
+  }, [portfolioId])
+
+  useEffect(() => {
+    void loadPortfolioData()
+  }, [loadPortfolioData])
 
   async function handleFollowToggle() {
     if (!currentUser || !owner) return
 
     try {
-      const supabase = createClient()
-
       if (isFollowing) {
-        await supabase
-          .from('follows')
-          .delete()
-          .eq('follower_id', currentUser.id)
-          .eq('following_id', owner.user_id)
-
+        await fetch('/api/community/follow', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ followingUserId: owner.user_id, action: 'unfollow' }),
+        })
         setIsFollowing(false)
       } else {
-        await supabase
-          .from('follows')
-          .insert({
-            follower_id: currentUser.id,
-            following_id: owner.user_id
-          })
-
+        await fetch('/api/community/follow', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ followingUserId: owner.user_id, action: 'follow' }),
+        })
         setIsFollowing(true)
       }
     } catch (error) {
       console.error('Error toggling follow:', error)
+    }
+  }
+
+  async function handlePortfolioFollowToggle() {
+    if (!currentUser || !portfolio) return
+    try {
+      const res = await fetch('/api/portfolio/follow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          portfolioId: portfolio.id,
+          action: isFollowingPortfolio ? 'unfollow' : 'follow',
+        }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (res.ok) setIsFollowingPortfolio(!!json.following)
+    } catch (e) {
+      console.error('Error toggling portfolio follow:', e)
     }
   }
 
@@ -198,10 +233,10 @@ export default function PortfolioDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0E1A] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500 mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading portfolio...</p>
+          <p className="text-muted-foreground">Loading portfolio...</p>
         </div>
       </div>
     )
@@ -209,11 +244,11 @@ export default function PortfolioDetailPage() {
 
   if (!portfolio) {
     return (
-      <div className="min-h-screen bg-[#0A0E1A] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <PieChart className="h-16 w-16 text-gray-600 mx-auto mb-4" />
+          <PieChart className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-2">Portfolio Not Found</h1>
-          <p className="text-gray-400 mb-4">This portfolio doesn't exist or is private</p>
+          <p className="text-muted-foreground mb-4">This portfolio doesn't exist or is private</p>
           <Link href="/community">
             <Button>
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -228,11 +263,11 @@ export default function PortfolioDetailPage() {
   const isOwner = currentUser && currentUser.id === portfolio.user_id
 
   return (
-    <div className="min-h-screen bg-[#0A0E1A]">
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="bg-gradient-to-r from-cyan-900/20 to-blue-900/20 border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <Link href={owner ? `/profile/${owner.username}` : '/community'} className="inline-flex items-center text-gray-400 hover:text-white mb-6">
+          <Link href={owner ? `/profile/${owner.username}` : '/community'} className="inline-flex items-center text-muted-foreground hover:text-foreground mb-6">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to {owner?.display_name || owner?.username || 'Community'}
           </Link>
@@ -250,7 +285,7 @@ export default function PortfolioDetailPage() {
                 )}
               </div>
               {portfolio.description && (
-                <p className="text-gray-400 mb-3">{portfolio.description}</p>
+                <p className="text-muted-foreground mb-3">{portfolio.description}</p>
               )}
               {owner && (
                 <Link href={`/profile/${owner.username}`} className="text-sm text-cyan-400 hover:underline flex items-center gap-2">
@@ -269,12 +304,21 @@ export default function PortfolioDetailPage() {
                   </Button>
                 </Link>
               ) : currentUser ? (
-                <Button
-                  onClick={handleFollowToggle}
-                  className={isFollowing ? 'bg-gray-700' : 'bg-gradient-to-r from-cyan-500 to-blue-500'}
-                >
-                  {isFollowing ? 'Following' : <><UserPlus className="h-4 w-4 mr-2" />Follow Trader</>}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={handleFollowToggle}
+                    className={isFollowing ? 'bg-muted text-foreground hover:bg-muted/80' : 'bg-gradient-to-r from-cyan-500 to-blue-500'}
+                  >
+                    {isFollowing ? 'Following' : <><UserPlus className="h-4 w-4 mr-2" />Follow Trader</>}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handlePortfolioFollowToggle}
+                    className={isFollowingPortfolio ? 'border-cyan-400/40 text-cyan-200' : 'border-white/20'}
+                  >
+                    {isFollowingPortfolio ? 'Portfolio Followed' : 'Follow Portfolio'}
+                  </Button>
+                </div>
               ) : (
                 <Link href="/auth/login">
                   <Button className="bg-gradient-to-r from-cyan-500 to-blue-500">
@@ -290,20 +334,20 @@ export default function PortfolioDetailPage() {
       {/* Stats */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid gap-4 md:grid-cols-4 mb-8">
-          <Card className="bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700">
+          <Card className="bg-card border-border">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-400">Portfolio Value</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Portfolio Value</CardTitle>
               <DollarSign className="h-4 w-4 text-yellow-400" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">${portfolio.total_value.toFixed(2)}</div>
-              <p className="text-xs text-gray-400 mt-1">{openPositions.length} open positions</p>
+              <p className="text-xs text-muted-foreground mt-1">{openPositions.length} open positions</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700">
+          <Card className="bg-card border-border">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-400">Total Return</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Return</CardTitle>
               <TrendingUp className="h-4 w-4 text-green-400" />
             </CardHeader>
             <CardContent>
@@ -316,25 +360,25 @@ export default function PortfolioDetailPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700">
+          <Card className="bg-card border-border">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-400">Win Rate</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Win Rate</CardTitle>
               <Target className="h-4 w-4 text-purple-400" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{portfolio.win_rate.toFixed(1)}%</div>
-              <p className="text-xs text-gray-400 mt-1">{closedPositions.length} closed trades</p>
+              <p className="text-xs text-muted-foreground mt-1">{closedPositions.length} closed trades</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700">
+          <Card className="bg-card border-border">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-400">Total Positions</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Positions</CardTitle>
               <Activity className="h-4 w-4 text-cyan-400" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{positions.length}</div>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 {openPositions.length} open, {closedPositions.length} closed
               </p>
             </CardContent>
@@ -357,13 +401,14 @@ export default function PortfolioDetailPage() {
               <PortfolioHeatmap positions={openPositions.map(p => ({
                 ...p,
                 ticker: p.symbol,
+                status: toHeatmapStatus(p.status),
                 unrealized_pnl: p.unrealized_pnl || 0,
                 unrealized_pnl_pct: p.unrealized_pnl_pct || 0
               }))} />
             )}
 
             {/* Position Cards */}
-            <Card className="bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700">
+            <Card className="bg-card border-border">
               <CardHeader>
                 <CardTitle>Open Positions ({openPositions.length})</CardTitle>
                 <CardDescription>Currently held positions</CardDescription>
@@ -371,14 +416,14 @@ export default function PortfolioDetailPage() {
               <CardContent>
                 {openPositions.length === 0 ? (
                   <div className="text-center py-12">
-                    <PieChart className="h-12 w-12 mx-auto mb-4 text-gray-600" />
-                    <p className="text-gray-400">No open positions</p>
+                    <PieChart className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-muted-foreground">No open positions</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {openPositions.map((position) => (
                       <Link key={position.id} href={`/position/${position.id}`}>
-                        <div className="p-4 rounded-lg border border-gray-700 hover:border-cyan-500/50 transition-all">
+                        <div className="p-4 rounded-lg border border-border bg-background/40 hover:border-cyan-500/50 transition-all">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
                               <div className={`p-3 rounded-lg ${
@@ -395,7 +440,7 @@ export default function PortfolioDetailPage() {
                                   <h3 className="text-xl font-bold">{position.symbol}</h3>
                                   <Badge className="capitalize">{position.status}</Badge>
                                 </div>
-                                <p className="text-sm text-gray-400">
+                                <p className="text-sm text-muted-foreground">
                                   {position.quantity} shares @ ${position.entry_price.toFixed(2)}
                                 </p>
                               </div>
@@ -423,7 +468,7 @@ export default function PortfolioDetailPage() {
 
             {/* Sector Allocation */}
             {Object.keys(sectorAllocation).length > 0 && (
-              <Card className="bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700">
+              <Card className="bg-card border-border">
                 <CardHeader>
                   <CardTitle>Sector Allocation</CardTitle>
                   <CardDescription>Portfolio distribution by sector</CardDescription>
@@ -436,11 +481,11 @@ export default function PortfolioDetailPage() {
                         <div key={sector}>
                           <div className="flex items-center justify-between mb-1">
                             <span className="text-sm font-medium text-white">{sector}</span>
-                            <span className="text-sm text-gray-400">
+                            <span className="text-sm text-muted-foreground">
                               ${value.toFixed(2)} ({percentage.toFixed(1)}%)
                             </span>
                           </div>
-                          <div className="w-full bg-gray-700 rounded-full h-2">
+                          <div className="w-full bg-muted rounded-full h-2">
                             <div 
                               className="bg-gradient-to-r from-cyan-500 to-blue-500 h-2 rounded-full"
                               style={{ width: `${percentage}%` }}
@@ -457,7 +502,7 @@ export default function PortfolioDetailPage() {
 
           {/* History Tab */}
           <TabsContent value="history" className="space-y-6">
-            <Card className="bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700">
+            <Card className="bg-card border-border">
               <CardHeader>
                 <CardTitle>Closed Positions ({closedPositions.length})</CardTitle>
                 <CardDescription>Trade history and outcomes</CardDescription>
@@ -465,14 +510,14 @@ export default function PortfolioDetailPage() {
               <CardContent>
                 {closedPositions.length === 0 ? (
                   <div className="text-center py-12">
-                    <Activity className="h-12 w-12 mx-auto mb-4 text-gray-600" />
-                    <p className="text-gray-400">No closed positions yet</p>
+                    <Activity className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-muted-foreground">No closed positions yet</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {closedPositions.map((position) => (
                       <Link key={position.id} href={`/position/${position.id}`}>
-                        <div className="p-4 rounded-lg border border-gray-700 hover:border-cyan-500/50 transition-all">
+                        <div className="p-4 rounded-lg border border-border bg-background/40 hover:border-cyan-500/50 transition-all">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
                               <div className={`p-3 rounded-lg ${
@@ -489,7 +534,7 @@ export default function PortfolioDetailPage() {
                                   <h3 className="text-xl font-bold">{position.symbol}</h3>
                                   <Badge variant="secondary">{position.status}</Badge>
                                 </div>
-                                <p className="text-sm text-gray-400">
+                                <p className="text-sm text-muted-foreground">
                                   {position.entry_date} → {position.exit_date}
                                 </p>
                               </div>
@@ -518,13 +563,13 @@ export default function PortfolioDetailPage() {
 
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-6">
-            <Card className="bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700">
+            <Card className="bg-card border-border">
               <CardHeader>
                 <CardTitle>Performance Analytics</CardTitle>
                 <CardDescription>Charts and metrics coming soon</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-400 text-center py-8">
+                <p className="text-muted-foreground text-center py-8">
                   Equity curve, trading calendar, and advanced analytics coming soon...
                 </p>
               </CardContent>
@@ -533,13 +578,13 @@ export default function PortfolioDetailPage() {
 
           {/* Activity Tab */}
           <TabsContent value="activity" className="space-y-6">
-            <Card className="bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700">
+            <Card className="bg-card border-border">
               <CardHeader>
                 <CardTitle>Recent Activity</CardTitle>
                 <CardDescription>Recent trades and updates from this portfolio</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-400 text-center py-8">
+                <p className="text-muted-foreground text-center py-8">
                   Activity feed coming soon...
                 </p>
               </CardContent>
