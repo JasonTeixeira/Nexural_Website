@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
 import { requireAdmin } from '@/lib/auth/admin'
+import { rewriteNewsletterLinks } from '@/lib/newsletter/link-rewriter'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -92,6 +93,14 @@ export async function POST(req: NextRequest) {
 
       const sendId = sendRow.id
       let html = withPixel(contentHtml, appUrl, sendId)
+      const rewritten = await rewriteNewsletterLinks({
+        supabase,
+        html,
+        appUrl,
+        sendId,
+        campaignId,
+      })
+      html = rewritten.html
       html = ensureUnsubscribeLink(html, appUrl, subscriberId)
 
       const { data, error } = await resend.emails.send({

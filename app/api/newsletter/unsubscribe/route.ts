@@ -42,10 +42,23 @@ export async function POST(request: NextRequest) {
     const { data: updated, error } = await q.select('id,email').maybeSingle()
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+    // Optional: attach most recent send_id for traceability.
+    let lastSendId: string | null = null
+    if (updated?.id) {
+      const { data: lastSend } = await supabase
+        .from('newsletter_sends')
+        .select('id')
+        .eq('subscriber_id', updated.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      lastSendId = lastSend?.id || null
+    }
+
     // Best-effort event log. We don't always have a send_id here.
     if (updated?.id) {
       await supabase.from('newsletter_events').insert({
-        send_id: null,
+        send_id: lastSendId,
         event_type: 'unsubscribed',
         url: null,
         ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || null,
@@ -59,4 +72,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
-
