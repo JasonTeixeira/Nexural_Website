@@ -12,14 +12,17 @@ type Product = {
 }
 
 async function fetchProducts(): Promise<Product[]> {
-  const base = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || ''
-  const url = `${base}/api/public/marketplace/products?limit=24`
-
-  // NOTE: This is a public page; no auth cookies required.
-  const res = await fetch(url, { next: { revalidate: 60 } })
-  if (!res.ok) return []
-  const data = await res.json().catch(() => ({}))
-  return data.items || []
+  // Use a relative URL so Next can resolve the internal route during SSR/static generation.
+  // This avoids failing builds when NEXT_PUBLIC_APP_URL isn't set or when self-fetch is blocked.
+  try {
+    // NOTE: This is a public page; no auth cookies required.
+    const res = await fetch('/api/public/marketplace/products?limit=24', { next: { revalidate: 60 } })
+    if (!res.ok) return []
+    const data = await res.json().catch(() => ({}))
+    return data.items || []
+  } catch {
+    return []
+  }
 }
 
 export default async function MarketplacePage() {
@@ -59,4 +62,3 @@ export default async function MarketplacePage() {
     </main>
   )
 }
-
