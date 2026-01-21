@@ -22,6 +22,7 @@ export default function SellerOnboardingPage() {
   const [acceptTerms, setAcceptTerms] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [connecting, setConnecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -67,6 +68,43 @@ export default function SellerOnboardingPage() {
       setError(e?.message || 'Unknown error')
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function startStripeConnect() {
+    try {
+      setConnecting(true)
+      setError(null)
+      const res = await fetch('/api/member/marketplace/stripe-connect/onboard', { method: 'POST' })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data?.error || 'Failed to start Stripe onboarding')
+      if (data?.url) window.location.href = data.url
+      else throw new Error('Missing onboarding url')
+    } catch (e: any) {
+      setError(e?.message || 'Unknown error')
+    } finally {
+      setConnecting(false)
+    }
+  }
+
+  async function syncStripeConnect() {
+    try {
+      setConnecting(true)
+      setError(null)
+      const res = await fetch('/api/member/marketplace/stripe-connect/sync', { method: 'POST' })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data?.error || 'Failed to sync Stripe status')
+      // reload seller state
+      const res2 = await fetch('/api/member/marketplace/seller')
+      const data2 = await res2.json().catch(() => ({}))
+      if (res2.ok) setSeller(data2.seller)
+      if (data?.onboarded !== true) {
+        setError('Stripe onboarding not complete yet. Please finish the Stripe form and try again.')
+      }
+    } catch (e: any) {
+      setError(e?.message || 'Unknown error')
+    } finally {
+      setConnecting(false)
     }
   }
 
@@ -122,7 +160,26 @@ export default function SellerOnboardingPage() {
             <div className="mt-6 rounded-md border border-white/10 bg-white/5 p-4 text-sm">
               <div className="font-medium">Next step</div>
               <div className="text-muted-foreground">
-                Stripe payout onboarding will be available once Phase M3 Stripe Connect routes are added.
+                Complete Stripe payout onboarding (Stripe Connect Express).
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  className="rounded-md bg-white/10 px-3 py-2 text-xs font-semibold hover:bg-white/15 disabled:opacity-50"
+                  onClick={startStripeConnect}
+                  disabled={connecting}
+                >
+                  {connecting ? 'Opening…' : 'Start / Continue Stripe Onboarding'}
+                </button>
+                <button
+                  className="rounded-md bg-white/10 px-3 py-2 text-xs font-semibold hover:bg-white/15 disabled:opacity-50"
+                  onClick={syncStripeConnect}
+                  disabled={connecting}
+                >
+                  {connecting ? 'Syncing…' : 'I finished Stripe — verify'}
+                </button>
+              </div>
+              <div className="mt-3 text-xs text-muted-foreground">
+                Status: {seller.stripe_connect_onboarded ? 'Onboarded ✅' : 'Not onboarded yet'}
               </div>
               <Link className="mt-2 inline-block text-cyan-400 hover:underline" href="/marketplace">
                 View Marketplace →
@@ -134,4 +191,3 @@ export default function SellerOnboardingPage() {
     </main>
   )
 }
-
