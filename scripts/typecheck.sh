@@ -5,4 +5,3 @@ set -euo pipefail
 # Keep as a script so CI/local can run consistently.
 
 ./node_modules/.bin/tsc -p tsconfig.typecheck.json --noEmit
-
