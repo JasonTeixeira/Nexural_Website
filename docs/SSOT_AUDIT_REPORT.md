@@ -115,13 +115,25 @@ This is a first-pass **requirements → implementation** matrix focused on the S
 
 ## Marketplace (Tier‑1): Marketplace requirements
 - **SSOT:** `docs/MARKETPLACE_SPEC.md`
-- **Status:** ❓ Not audited yet
+- **Status:** ❌ Missing (not implemented)
 
 **Evidence (files):**
-- `app/marketplace/**`
-- `lib/entitlements*.ts`
+- `app/marketplace/**` (does not exist)
+- `supabase/migrations/**` (no marketplace/product/listing/order/license tables found)
+- `app/api/**` (no marketplace endpoints found)
+- `app/api/webhooks/stripe/route.ts` exists, but does not implement marketplace purchase→license issuance.
 
-**Next:** run a dedicated marketplace pass (schema + listing lifecycle + purchase + entitlement enforcement).
+**Gap:** The entire marketplace domain required by SSOT is currently absent:
+- Seller onboarding (profile + payout setup + terms agreement)
+- Product listing model (types, attributes, versioning)
+- Purchase records + license/entitlement issuance + downloads
+- Revenue share rules (20% fee)
+- Reviews/ratings (verified purchasers only)
+- Admin governance tooling
+- Webhook-driven confirmation + retries + idempotency + audit logs
+- Public browsing vs member-only purchase/download
+
+**Next:** Implement Marketplace MVP per `docs/MARKETPLACE_SPEC.md` (schema + routes + pages), then re-run audit.
 
 ---
 
