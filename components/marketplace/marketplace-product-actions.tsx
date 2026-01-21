@@ -10,6 +10,7 @@ type Props = {
 export function MarketplaceProductActions({ productId, priceCents }: Props) {
   const [loading, setLoading] = useState(false)
   const [entitled, setEntitled] = useState<boolean | null>(null)
+  const [authed, setAuthed] = useState<boolean | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -22,16 +23,21 @@ export function MarketplaceProductActions({ productId, priceCents }: Props) {
           body: JSON.stringify({ productId }),
         })
         if (res.ok) {
+          setAuthed(true)
           setEntitled(true)
         } else if (res.status === 401) {
+          setAuthed(false)
           setEntitled(null) // not logged in
         } else if (res.status === 403) {
+          setAuthed(true)
           setEntitled(false)
         } else {
+          setAuthed(true)
           // Other errors: treat as unknown
           setEntitled(false)
         }
       } catch {
+        setAuthed(true)
         setEntitled(false)
       }
     })()
@@ -87,6 +93,20 @@ export function MarketplaceProductActions({ productId, priceCents }: Props) {
 
   const isFree = priceCents <= 0
 
+  if (authed === false) {
+    return (
+      <div className="mt-6">
+        <div className="text-sm text-muted-foreground">Sign in to purchase or download.</div>
+        <a
+          className="mt-3 inline-flex rounded-md bg-cyan-500 px-4 py-2 text-sm font-semibold text-black"
+          href="/auth"
+        >
+          Sign in
+        </a>
+      </div>
+    )
+  }
+
   return (
     <div className="mt-6">
       {error ? <div className="mb-3 text-sm text-red-400">{error}</div> : null}
@@ -112,4 +132,3 @@ export function MarketplaceProductActions({ productId, priceCents }: Props) {
     </div>
   )
 }
-
