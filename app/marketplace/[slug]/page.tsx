@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { MarketplaceProductActions } from '@/components/marketplace/marketplace-product-actions'
 
 type Product = {
   id: string
@@ -45,9 +46,10 @@ export default async function MarketplaceProductPage({ params }: { params: Promi
           <p className="mt-2 text-xs text-muted-foreground">
             Purchasing and downloading requires membership. Checkout/entitlements will be added in Phase M4.
           </p>
+
+          <MarketplaceProductActions productId={product.id} priceCents={product.price_cents} />
         </div>
       </div>
     </main>
   )
 }
-
