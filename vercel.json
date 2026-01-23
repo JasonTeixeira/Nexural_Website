@@ -1,6 +1,26 @@
 {
   "crons": [
     {
+      "path": "/api/cron/ssot-leaderboard-rollups",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/ssot-alerts",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/ssot-referral-awards",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/newsletter-sequences",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/newsletter-scheduler",
+      "schedule": "*/10 * * * *"
+    },
+    {
       "path": "/api/cron/hourly-feature-generation",
       "schedule": "0 * * * *"
     },

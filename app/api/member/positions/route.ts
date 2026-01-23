@@ -1,40 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import jwt from 'jsonwebtoken'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+export const dynamic = 'force-dynamic'
+import { requireSupabaseUser } from '@/lib/auth/server-helpers'
+import { enforceMemberEntitlement } from '@/lib/entitlements-api'
+import { createClient } from '@/lib/supabase/server'
+import { MemberPositionsLedgerRepository } from '@/lib/trading-ledger/repository-member-positions'
+import type { AmendmentClass } from '@/lib/trading-ledger/types'
 
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization')
-    const token = authHeader?.replace('Bearer ', '')
+    const auth = await requireSupabaseUser()
+    if (auth.response) return auth.response
 
-    if (!token) {
-      return NextResponse.json(
-        { error: 'No token provided' },
-        { status: 401 }
-      )
-    }
+    const entitlementResp = await enforceMemberEntitlement()
+    if (entitlementResp) return entitlementResp
 
-    // Verify JWT token
-    let decoded: any
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET!)
-    } catch (err) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      )
-    }
+    const supabase = await createClient()
 
     // Get user data
     const { data: user, error: userError } = await supabase
       .from('members')
       .select('id, subscription_status')
-      .eq('id', decoded.id)
+      .eq('id', auth.user.id)
       .single()
 
     if (userError || !user) {
@@ -55,83 +42,28 @@ export async function GET(request: NextRequest) {
     // Get query parameters
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status') || 'all'
-    const limit = parseInt(searchParams.get('limit') || '50')
-    const offset = parseInt(searchParams.get('offset') || '0')
+    const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '50'), 1), 500)
 
-    // Build query for swing_positions table
-    let query = supabase
-      .from('swing_positions')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1)
+    const repo = new MemberPositionsLedgerRepository()
+    const repoStatus = (status === 'all' ? 'all' : (status as any))
 
-    // Filter by status if not 'all'
-    if (status !== 'all') {
-      query = query.eq('status', status)
-    }
+    const { positions } = await repo.listPositions({
+      owner_type: 'member',
+      user_id: auth.user.id,
+      status: repoStatus,
+      limit,
+    })
 
-    const { data: positions, error: positionsError } = await query
-
-    if (positionsError) {
-      console.error('Error fetching positions:', positionsError)
-      return NextResponse.json(
-        { error: 'Failed to fetch positions' },
-        { status: 500 }
-      )
-    }
-
-    // Calculate P&L for each position
-    const positionsWithPnL = positions?.map(position => {
-      let pnl = 0
-      let pnlPercentage = 0
-
-      if (position.exit_price && position.entry_price) {
-        // Calculate realized P&L
-        if (position.direction === 'long') {
-          pnl = (position.exit_price - position.entry_price) * (position.size || 1)
-          pnlPercentage = ((position.exit_price - position.entry_price) / position.entry_price) * 100
-        } else {
-          pnl = (position.entry_price - position.exit_price) * (position.size || 1)
-          pnlPercentage = ((position.entry_price - position.exit_price) / position.entry_price) * 100
-        }
-      } else if (position.current_price && position.entry_price) {
-        // Calculate unrealized P&L for open positions
-        if (position.direction === 'long') {
-          pnl = (position.current_price - position.entry_price) * (position.size || 1)
-          pnlPercentage = ((position.current_price - position.entry_price) / position.entry_price) * 100
-        } else {
-          pnl = (position.entry_price - position.current_price) * (position.size || 1)
-          pnlPercentage = ((position.entry_price - position.current_price) / position.entry_price) * 100
-        }
-      }
-
-      return {
-        ...position,
-        pnl: Math.round(pnl * 100) / 100,
-        pnl_percentage: Math.round(pnlPercentage * 100) / 100,
-        is_profitable: pnl > 0
-      }
-    }) || []
-
-    // Calculate summary statistics
-    const summary = {
-      total: positionsWithPnL.length,
-      open: positionsWithPnL.filter(p => p.status === 'open').length,
-      closed: positionsWithPnL.filter(p => p.status === 'closed').length,
-      total_pnl: positionsWithPnL.reduce((sum, p) => sum + (p.pnl || 0), 0),
-      winning_positions: positionsWithPnL.filter(p => p.pnl && p.pnl > 0).length,
-      losing_positions: positionsWithPnL.filter(p => p.pnl && p.pnl < 0).length
-    }
+    // Privacy-by-default (SSOT): only return the authenticated user's positions.
+    // (Enforced by user_id filter above.)
 
     return NextResponse.json({
-      positions: positionsWithPnL,
+      positions,
       summary: {
-        ...summary,
-        win_rate: summary.closed > 0 
-          ? Math.round((summary.winning_positions / summary.closed) * 100 * 10) / 10 
-          : 0,
-        total_pnl: Math.round(summary.total_pnl * 100) / 100
-      }
+        total: positions.length,
+        open: positions.filter((p) => p.status === 'open').length,
+        closed: positions.filter((p) => p.status === 'closed').length,
+      },
     })
 
   } catch (error) {
@@ -140,5 +72,79 @@ export async function GET(request: NextRequest) {
       { error: 'Internal server error' },
       { status: 500 }
     )
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const auth = await requireSupabaseUser()
+    if (auth.response) return auth.response
+
+    const entitlementResp = await enforceMemberEntitlement()
+    if (entitlementResp) return entitlementResp
+
+    const supabase = await createClient()
+
+    const body = await request.json()
+
+    // SSOT: member positions are private-by-default.
+    // This schema uses `positions` legacy table during Phase 1.
+    const now = new Date().toISOString()
+    const symbol = String(body.symbol || '').toUpperCase()
+    if (!symbol) {
+      return NextResponse.json({ error: 'symbol is required' }, { status: 400 })
+    }
+
+    const entryPrice = Number(body.entry_price)
+    if (!Number.isFinite(entryPrice) || entryPrice <= 0) {
+      return NextResponse.json({ error: 'entry_price must be a positive number' }, { status: 400 })
+    }
+
+    const quantity = Number(body.quantity)
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      return NextResponse.json({ error: 'quantity must be a positive number' }, { status: 400 })
+    }
+
+    const row: any = {
+      user_id: auth.user.id,
+      symbol,
+      status: 'open',
+      direction: body.direction === 'short' ? 'short' : 'long',
+      entry_price: entryPrice,
+      current_price: entryPrice,
+      quantity,
+      opened_at: body.opened_at || body.entry_date || now,
+      // privacy-by-default
+      is_public: false,
+      notes: body.notes || null,
+      stop_loss: body.stop_loss ?? null,
+      target: body.target_1 ?? body.take_profit ?? null,
+    }
+
+    const { data, error } = await supabase.from('positions').insert(row).select('*').single()
+    if (error) {
+      console.error('Error creating member position:', error)
+      return NextResponse.json({ error: 'Failed to create position' }, { status: 500 })
+    }
+
+    // SSOT event spine: emit position.opened for member positions
+    // Source of truth: docs/EVENT_TAXONOMY.md + docs/TRADING_LEDGER_SPEC.md
+    await supabase.from('position_events').insert({
+      position_id: data.id,
+      event_type: 'position.opened',
+      event_date: new Date(row.opened_at || now).toISOString(),
+      note: 'Opened (member)',
+      created_by: auth.user.email || null,
+      actor_id: auth.user.id,
+    } as any)
+
+    // Return canonical mapped shape via repository adapter
+    const repo = new MemberPositionsLedgerRepository()
+    const { position } = await repo.getPositionById(data.id)
+
+    return NextResponse.json({ position }, { status: 201 })
+  } catch (error) {
+    console.error('POST /api/member/positions error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

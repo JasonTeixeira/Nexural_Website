@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { algoTradingReferralSystem } from '@/lib/algo-trading-referral-system'
-import { algoTradingGamification } from '@/lib/algo-trading-gamification'
+import { algoTradingReferralSystem } from '@/lib/referrals/algo-trading-referral-system'
+import { algoTradingGamification } from '@/lib/gamification/algo-trading-gamification'
 
 export async function POST(req: NextRequest) {
   try {

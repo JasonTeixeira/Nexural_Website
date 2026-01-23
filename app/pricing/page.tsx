@@ -1,4 +1,4 @@
-import { PricingHero } from "@/components/pricing-hero"
+import { PricingHero } from "@/components/marketing/pricing-hero"
 import { AIProcessVisualization } from "@/components/ai-process-visualization"
 import { ValuePropositionCharts } from "@/components/value-proposition-charts"
 import { AnimatedSection } from "@/components/animated-section"

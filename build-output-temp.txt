@@ -1,0 +1,39 @@
+
+> nexural-trading@0.1.0 build
+> next build
+
+  ▲ Next.js 14.2.35
+  - Environments: .env.local
+  - Experiments (use with caution):
+    · optimizeCss
+
+   Creating an optimized production build ...
+Failed to compile.
+
+./app/api/cron/update-prices/route.ts
+Module not found: Can't resolve '@/lib/alpaca-client'
+
+https://nextjs.org/docs/messages/module-not-found
+
+./app/api/market-status/route.ts
+Module not found: Can't resolve '@/lib/alpaca-client'
+
+https://nextjs.org/docs/messages/module-not-found
+
+./app/how-it-works/page.tsx
+Module not found: Can't resolve '@/components/dashboard-mockup'
+
+https://nextjs.org/docs/messages/module-not-found
+
+./app/how-it-works/page.tsx
+Module not found: Can't resolve '@/components/critical-metrics-grid'
+
+https://nextjs.org/docs/messages/module-not-found
+
+./app/how-it-works/page.tsx
+Module not found: Can't resolve '@/components/decision-framework'
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+> Build failed because of webpack errors

@@ -15,7 +15,8 @@ import {
   LogOut,
   Bell,
   Wallet,
-  BarChart3
+  BarChart3,
+  ShoppingBag
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -68,6 +69,12 @@ export function MemberPortalNavigation({ subscriptionTier, memberName }: Navigat
       icon: Rocket,
       badge: hasAlgoAccess ? null : 'Premium',
       locked: !hasAlgoAccess
+    },
+    {
+      name: 'My Purchases',
+      href: '/member-portal/marketplace/purchases',
+      icon: ShoppingBag,
+      badge: null
     },
     {
       name: 'Profile',

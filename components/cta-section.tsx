@@ -1,8 +1,2 @@
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
+export { CTASection } from './marketing/cta-section'
 
-export function CTASection() {
-  return (
-    null
-  )
-}

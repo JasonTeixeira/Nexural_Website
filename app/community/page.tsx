@@ -22,7 +22,7 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
-import { CommunityActivityFeed } from '@/components/community-activity-feed'
+import { CommunityActivityFeed } from '@/components/social/community-activity-feed'
 import { FollowingFeed } from '@/components/community/following-feed'
 
 interface CommunityMember {

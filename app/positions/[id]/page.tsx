@@ -79,17 +79,17 @@ interface PositionDetail {
 }
 
 export default function PositionDetailPage() {
-  const params = useParams()
+  const params = useParams() as { id?: string }
   const router = useRouter()
   const [data, setData] = useState<PositionDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (params.id) {
-      fetchPositionDetail(params.id as string)
+    if (params?.id) {
+      fetchPositionDetail(params.id)
     }
-  }, [params.id])
+  }, [params?.id])
 
   const fetchPositionDetail = async (id: string) => {
     try {

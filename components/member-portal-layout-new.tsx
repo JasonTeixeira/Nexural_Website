@@ -24,6 +24,31 @@ export function MemberPortalLayoutNew({ children }: MemberPortalLayoutNewProps) 
       const { data: { user } } = await supabase.auth.getUser()
       
       if (user) {
+        // SSOT onboarding gate: follow-admin + enable admin alerts.
+        // Enforce via a dedicated onboarding page.
+        try {
+          const res = await fetch('/api/member/onboarding/status', { cache: 'no-store' })
+          if (res.ok) {
+            const status = await res.json()
+            const pathname = window.location.pathname
+            const onOnboardingPage = pathname.startsWith('/member-portal/onboarding')
+            if (!status?.ok && !onOnboardingPage) {
+              router.replace('/member-portal/onboarding')
+              setLoading(false)
+              return
+            }
+          }
+        } catch (e) {
+          // If the status endpoint fails, fail closed and force onboarding.
+          const pathname = window.location.pathname
+          const onOnboardingPage = pathname.startsWith('/member-portal/onboarding')
+          if (!onOnboardingPage) {
+            router.replace('/member-portal/onboarding')
+            setLoading(false)
+            return
+          }
+        }
+
         setMember(user)
       }
       

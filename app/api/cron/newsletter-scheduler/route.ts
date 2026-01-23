@@ -4,11 +4,9 @@ import { NewsletterScheduler } from '@/lib/newsletter-scheduler'
 // POST - Automated cron job for processing scheduled campaigns
 export async function POST(request: NextRequest) {
   try {
-    // Verify this is a legitimate cron request
-    const authHeader = request.headers.get('authorization')
-    const cronSecret = process.env.CRON_SECRET || 'nexural_cron_secret_2024'
-    
-    if (!authHeader || authHeader !== `Bearer ${cronSecret}`) {
+    // SSOT: standardize cron auth on x-cron-token
+    const token = request.headers.get('x-cron-token')
+    if (!process.env.CRON_SECRET || token !== process.env.CRON_SECRET) {
       console.error('Unauthorized cron request')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -56,6 +54,12 @@ export async function POST(request: NextRequest) {
 // GET - Health check for the cron job
 export async function GET(request: NextRequest) {
   try {
+    // SSOT: standardize cron auth on x-cron-token
+    const token = request.headers.get('x-cron-token')
+    if (!process.env.CRON_SECRET || token !== process.env.CRON_SECRET) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const summary = await NewsletterScheduler.getScheduledCampaignsSummary()
     
     return NextResponse.json({

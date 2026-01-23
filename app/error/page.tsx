@@ -8,7 +8,7 @@ import Link from "next/link"
 
 export default function ErrorPage() {
   const searchParams = useSearchParams()
-  const message = searchParams.get("message") || "An unknown error occurred"
+  const message = searchParams?.get("message") || "An unknown error occurred"
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">

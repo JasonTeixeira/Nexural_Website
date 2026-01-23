@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { MemberPortalLayoutNew } from '@/components/member-portal-layout-new'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -32,6 +32,7 @@ interface UserProfile {
   tradingview_url: string | null
   is_profile_public: boolean
   show_performance: boolean
+  portfolio_visibility_mode?: 'public' | 'private'
 }
 
 export default function ProfilePage() {
@@ -59,14 +60,11 @@ export default function ProfilePage() {
     github_url: '',
     tradingview_url: '',
     is_profile_public: true,
-    show_performance: true
+    show_performance: true,
+    portfolio_visibility_mode: 'public' as 'public' | 'private'
   })
 
-  useEffect(() => {
-    loadProfile()
-  }, [])
-
-  async function loadProfile() {
+  const loadProfile = useCallback(async () => {
     try {
       const supabase = createClient()
       
@@ -106,7 +104,8 @@ export default function ProfilePage() {
           github_url: profileData.github_url || '',
           tradingview_url: profileData.tradingview_url || '',
           is_profile_public: profileData.is_profile_public ?? true,
-          show_performance: profileData.show_performance ?? true
+          show_performance: profileData.show_performance ?? true,
+          portfolio_visibility_mode: profileData.portfolio_visibility_mode ?? 'public'
         })
       } else {
         // No profile exists, need to create one
@@ -121,7 +120,11 @@ export default function ProfilePage() {
       console.error('Error loading profile:', error)
       setLoading(false)
     }
-  }
+  }, [router])
+
+  useEffect(() => {
+    void loadProfile()
+  }, [loadProfile])
 
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault()
@@ -151,7 +154,8 @@ export default function ProfilePage() {
         github_url: formData.github_url.trim() || null,
         tradingview_url: formData.tradingview_url.trim() || null,
         is_profile_public: formData.is_profile_public,
-        show_performance: formData.show_performance
+        show_performance: formData.show_performance,
+        portfolio_visibility_mode: formData.portfolio_visibility_mode
       }
 
       if (isNewProfile) {
@@ -400,7 +404,7 @@ export default function ProfilePage() {
                     type="url"
                     value={formData.discord_url}
                     onChange={(e) => setFormData({...formData, discord_url: e.target.value})}
-                    placeholder="https://discord.gg/yourserver"
+                    placeholder="https://discord.gg/TzjfyPMw"
                     className="bg-gray-800 border-gray-700"
                   />
                 </div>
@@ -466,6 +470,31 @@ export default function ProfilePage() {
               <CardDescription>Control what others can see</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Portfolio Visibility Mode (Global)</Label>
+                <p className="text-sm text-gray-400">
+                  SSOT: choose one global mode. In <strong>Private</strong>, your portfolios/positions are hidden from other members and you are removed from leaderboards/discovery.
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={formData.portfolio_visibility_mode === 'public' ? 'default' : 'outline'}
+                    onClick={() => setFormData({ ...formData, portfolio_visibility_mode: 'public' })}
+                  >
+                    Public
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={formData.portfolio_visibility_mode === 'private' ? 'default' : 'outline'}
+                    onClick={() => setFormData({ ...formData, portfolio_visibility_mode: 'private' })}
+                  >
+                    Private
+                  </Button>
+                </div>
+              </div>
+
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label>Public Profile</Label>

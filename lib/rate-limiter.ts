@@ -139,6 +139,16 @@ export const signupRateLimiter = createRateLimiter({
   prefix: 'ratelimit:signup',
 }) || createFallbackLimiter(3, 60 * 60 * 1000)
 
+/**
+ * Referrals consume endpoint - prevent cookie stuffing / abuse
+ * 10 requests per hour per user+ip (or ip if unauth)
+ */
+export const referralConsumeRateLimiter = createRateLimiter({
+  maxRequests: 10,
+  windowMs: 60 * 60 * 1000, // 1 hour
+  prefix: 'ratelimit:referral_consume',
+}) || createFallbackLimiter(10, 60 * 60 * 1000)
+
 // =============================================================================
 // HELPER FUNCTIONS
 // =============================================================================
@@ -265,6 +275,7 @@ export const rateLimitConfigs = {
   webhook: { max: 10, window: '1m', message: 'Too many webhook requests' },
   email: { max: 5, window: '1h', message: 'Too many emails sent' },
   signup: { max: 3, window: '1h', message: 'Too many signup attempts' },
+  referralConsume: { max: 10, window: '1h', message: 'Too many referral attempts' },
 }
 
 // =============================================================================

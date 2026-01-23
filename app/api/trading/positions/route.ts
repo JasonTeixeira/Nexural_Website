@@ -1,3 +1,4 @@
+import { emitDeletionGateHit } from '@/lib/deletion-gate'
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
@@ -11,6 +12,7 @@ const supabase = createClient(
  * Fetch trading positions (active or all)
  */
 export async function GET(request: NextRequest) {
+  emitDeletionGateHit('legacy.api.trading.positions', { method: 'GET' })
   try {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') || 'open';
@@ -70,6 +72,7 @@ export async function GET(request: NextRequest) {
  * Create a new position (open trade)
  */
 export async function POST(request: NextRequest) {
+  emitDeletionGateHit('legacy.api.trading.positions', { method: 'POST' })
   try {
     const body = await request.json();
 
@@ -124,6 +127,7 @@ export async function POST(request: NextRequest) {
  * Update a position (close trade)
  */
 export async function PATCH(request: NextRequest) {
+  emitDeletionGateHit('legacy.api.trading.positions', { method: 'PATCH' })
   try {
     const body = await request.json();
     const { trade_id, exit_price, exit_reason } = body;

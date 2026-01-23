@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { algoTradingGamification } from '@/lib/algo-trading-gamification'
+import { algoTradingGamification } from '@/lib/gamification/algo-trading-gamification'
 
 export async function GET(req: NextRequest) {
   try {
