@@ -16,7 +16,17 @@ export async function requireSupabaseUser(): Promise<
 > {
   try {
     const supabase = await createClient()
-    const { data, error } = await supabase.auth.getUser()
+    // Support both cookie-based auth (normal browser flow) and explicit
+    // Authorization header (useful for API clients/tests).
+    //
+    // NOTE: This runs in Route Handlers, not Server Components.
+    // Using `next/headers` is supported here.
+    const { headers } = await import('next/headers')
+    const authHeader = headers().get('authorization') || headers().get('Authorization')
+
+    const { data, error } = authHeader
+      ? await supabase.auth.getUser(authHeader.replace(/^Bearer\s+/i, '').trim())
+      : await supabase.auth.getUser()
     if (error || !data?.user?.id) {
       return { response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
     }

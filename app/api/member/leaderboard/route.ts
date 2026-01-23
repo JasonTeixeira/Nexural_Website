@@ -71,5 +71,8 @@ export async function GET(req: NextRequest) {
   const filtered = items.filter((it: any) => it.portfolio_visibility_mode !== 'private')
   const ranked = filtered.map((it: any, i: number) => ({ ...it, rank: i + 1 }))
 
-  return NextResponse.json({ timeframe_days: timeframe, items: ranked })
+  // SSOT: if any item is approximate, the client must be told this leaderboard is approximate.
+  const isApproximate = ranked.some((it: any) => it.approximate === true)
+
+  return NextResponse.json({ timeframe_days: timeframe, is_approximate: isApproximate, items: ranked })
 }

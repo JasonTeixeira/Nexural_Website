@@ -188,6 +188,9 @@ backups/
 # Supabase migrations are part of the SSOT and must be committed
 !supabase/migrations/*.sql
 
+# Supabase local CLI temp state (must never be committed)
+supabase/.temp/
+
 # Large archive folders (7.3GB+ - do not commit)
 _ARCHIVE/
 

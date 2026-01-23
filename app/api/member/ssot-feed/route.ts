@@ -36,8 +36,21 @@ export async function GET(req: NextRequest) {
   const markSeen = url.searchParams.get('markSeen') === '1'
 
   // Best-effort safety filters
-  const blockedRes = await supabase.from('user_blocks').select('blocked_id').eq('blocker_id', user.id)
-  const blockedIds = new Set((blockedRes.data || []).map((r: any) => r.blocked_id))
+  // SSOT safety rule: a blocked user cannot interact with the blocker, and their
+  // content should not appear to the blocker.
+  // Additionally handle reverse-block (if they blocked viewer).
+  const [blocksByMeRes, blocksAgainstMeRes, mutesByMeRes] = await Promise.all([
+    supabase.from('user_blocks').select('blocked_user_id').eq('blocker_user_id', user.id),
+    supabase.from('user_blocks').select('blocker_user_id').eq('blocked_user_id', user.id),
+    supabase.from('user_mutes').select('muted_user_id').eq('muter_user_id', user.id),
+  ])
+
+  const blockedIds = new Set([
+    ...(blocksByMeRes.data || []).map((r: any) => r.blocked_user_id),
+    ...(blocksAgainstMeRes.data || []).map((r: any) => r.blocker_user_id),
+  ].filter(Boolean))
+
+  const mutedIds = new Set((mutesByMeRes.data || []).map((r: any) => r.muted_user_id).filter(Boolean))
 
   // Following ids
   const followsRes = await supabase.from('follows').select('following_id').eq('follower_id', user.id)
@@ -63,7 +76,9 @@ export async function GET(req: NextRequest) {
   const { data: events, error: evErr } = await q
   if (evErr) return NextResponse.json({ error: evErr.message }, { status: 500 })
 
-  const baseEvents = (events || []).filter((e: any) => !blockedIds.has(e.actor_id))
+  const baseEvents = (events || []).filter(
+    (e: any) => !blockedIds.has(e.actor_id) && !mutedIds.has(e.actor_id)
+  )
 
   // Hydrate positions from both tables (Phase 1: admin in trading_positions, member in positions).
   const positionIds = Array.from(new Set(baseEvents.map((e: any) => e.position_id).filter(Boolean)))

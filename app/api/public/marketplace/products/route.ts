@@ -13,14 +13,24 @@ export async function GET(req: NextRequest) {
   const q = (url.searchParams.get('q') || '').trim()
   const type = (url.searchParams.get('type') || '').trim()
 
-  let query = supabase
+  // SSOT: public browsing must work (SEO).
+  // In the current environment, RLS blocks anon reads of marketplace_products.
+  // We therefore use the service role client for this *public, read-only* endpoint.
+  const { createServiceClient } = await import('@/lib/supabase/service')
+  const service = createServiceClient()
+
+  // Remote schema (currently live) differs from the SSOT migration.
+  // Remote fields: platform, product_type, active (bool)
+  // SSOT fields: type, status
+  // For now, we support the remote schema so the marketplace can function.
+  let query = service
     .from('marketplace_products')
-    .select('id,seller_id,slug,type,title,description,price_cents,currency,tags,status,created_at,updated_at')
-    .eq('status', 'active')
+    .select('id,seller_id,slug,product_type,title,description,price_cents,currency,tags,active,created_at,updated_at')
+    .eq('active', true)
     .order('created_at', { ascending: false })
     .limit(limit)
 
-  if (type) query = query.eq('type', type)
+  if (type) query = query.eq('product_type', type)
   if (q) {
     // Basic search: title/description. (FTS can be added later.)
     query = query.or(`title.ilike.%${q}%,description.ilike.%${q}%`)
@@ -31,4 +41,3 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({ items: data ?? [] })
 }
-

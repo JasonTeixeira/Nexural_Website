@@ -1,3 +1,4 @@
+import { emitDeletionGateHit } from '@/lib/deletion-gate'
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
@@ -11,6 +12,7 @@ const supabase = createClient(
  * Fetch recent trading signals
  */
 export async function GET(request: NextRequest) {
+  emitDeletionGateHit('legacy.api.trading.signals', { method: 'GET' })
   try {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50');
@@ -60,6 +62,7 @@ export async function GET(request: NextRequest) {
  * Create a new trading signal
  */
 export async function POST(request: NextRequest) {
+  emitDeletionGateHit('legacy.api.trading.signals', { method: 'POST' })
   try {
     const body = await request.json();
 

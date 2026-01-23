@@ -1,3 +1,4 @@
+import { emitDeletionGateHit } from '@/lib/deletion-gate'
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
@@ -11,6 +12,7 @@ const supabase = createClient(
  * Fetch trading performance metrics
  */
 export async function GET(request: NextRequest) {
+  emitDeletionGateHit('legacy.api.trading.performance', { method: 'GET' })
   try {
     const { searchParams } = new URL(request.url);
     const period = searchParams.get('period') || '30'; // days
