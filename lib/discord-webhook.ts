@@ -648,7 +648,12 @@ export class DiscordWebhook {
  * Get Discord webhook instance
  */
 export function getDiscordWebhook(): DiscordWebhook | null {
-  const webhookUrl = process.env.DISCORD_WEBHOOK_URL
+  // Prefer channel-specific webhooks if present (supports selling vs swings)
+  // Fallback to DISCORD_WEBHOOK_URL for legacy setups.
+  const webhookUrl =
+    process.env.DISCORD_WEBHOOK_SELLING ||
+    process.env.DISCORD_WEBHOOK_SWINGS ||
+    process.env.DISCORD_WEBHOOK_URL
   
   if (!webhookUrl) {
     console.warn('Discord webhook URL not configured')

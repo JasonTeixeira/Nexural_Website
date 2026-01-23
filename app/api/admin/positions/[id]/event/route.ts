@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase-client'
 import { getDiscordWebhook } from '@/lib/discord-webhook'
+import { getDiscordChannel } from '@/lib/discord-channels'
 
 export async function POST(
   request: Request,
@@ -102,7 +103,11 @@ export async function POST(
 
     // Send Discord notification if enabled
     if (send_discord && eventData) {
-      const webhook = getDiscordWebhook()
+      // Route to the right Discord channel.
+      // For now we default to the “selling” channel if configured, otherwise fallback.
+      // If you later add a `position.signal_type` (e.g. 'swing' | 'options' | etc),
+      // we can route dynamically via `routeSignal`.
+      const webhook = getDiscordChannel('selling') || getDiscordWebhook()
       if (webhook) {
         const positionUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/positions/${params.id}`
         
