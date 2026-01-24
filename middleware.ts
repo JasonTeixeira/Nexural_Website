@@ -26,6 +26,7 @@ const PUBLIC_ROUTES = [
   '/profile',
   '/community',
   '/leaderboard',
+  '/api/health/env',
 ]
 
 // Routes that require authentication

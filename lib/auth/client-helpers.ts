@@ -6,7 +6,9 @@ import { createClient } from '@/lib/supabase/client'
  * Client-side helper to sign in with OAuth
  * Use in client components
  */
-export async function signInWithOAuth(provider: 'google' | 'github' | 'discord') {
+export type OAuthProvider = 'google' | 'github' | 'discord' | 'azure'
+
+export async function signInWithOAuth(provider: OAuthProvider) {
   const supabase = createClient()
   
   const { error } = await supabase.auth.signInWithOAuth({

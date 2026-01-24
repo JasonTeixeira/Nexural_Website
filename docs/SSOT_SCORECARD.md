@@ -36,6 +36,44 @@ This scorecard is the living “single pane of glass” for:
 
 ---
 
+## 🚨 Production incident: Auth is broken (Google/Discord + possibly member/admin)
+
+### Observed symptoms (prod: https://www.nexural.io)
+- User reports **"Failed to fetch"** on login flows.
+- Hitting OAuth endpoints returns redirects with **`client_id=undefined`**:
+  - `GET /api/auth/google` → `location: https://accounts.google.com/...client_id=undefined...`
+  - `GET /api/auth/discord` → `location: https://discord.com/...client_id=undefined...`
+  - This is definitive evidence that **Vercel production env vars are missing** for OAuth.
+
+### Root cause (high confidence)
+- **Missing Vercel env vars**:
+  - `GOOGLE_CLIENT_ID`
+  - `GOOGLE_CLIENT_SECRET`
+  - `DISCORD_CLIENT_ID` (or not available at runtime)
+  - `DISCORD_CLIENT_SECRET` (or not available at runtime)
+- Additionally, `NEXT_PUBLIC_APP_URL` should be `https://www.nexural.io` (currently observed redirects show `http://nexural.io`).
+
+### Action items (P0)
+1. Set Vercel env vars for **Production + Preview**:
+   - `NEXT_PUBLIC_APP_URL=https://www.nexural.io`
+   - `NEXT_PUBLIC_SITE_URL=https://www.nexural.io` (recommended)
+   - `GOOGLE_CLIENT_ID=...`
+   - `GOOGLE_CLIENT_SECRET=...`
+   - `DISCORD_CLIENT_ID=...`
+   - `DISCORD_CLIENT_SECRET=...`
+2. Ensure Supabase Auth provider redirect URLs include:
+   - `https://www.nexural.io/auth/callback`
+   - `https://www.nexural.io/auth/login`
+3. Confirm Admin auth backing table exists and has an active admin user:
+   - `admin_users` row for `admin@nexural.io`
+4. Re-test:
+   - Member email/password login
+   - Admin email/password login
+   - Google OAuth
+   - Discord OAuth
+
+---
+
 ## SSOT Document Scores (initial placeholder)
 
 > NOTE: These will be filled with evidence links and gaps as we complete the coverage matrix.
