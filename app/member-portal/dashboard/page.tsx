@@ -13,6 +13,7 @@ import { SwingPositionsWidget } from '@/components/positions/swing-positions-wid
 import { DiscordConnectionCard } from '@/components/discord-connection-card'
 import { AlgoTradingHeroBanner } from '@/components/algo-trading/algo-trading-hero-banner'
 import { toast } from '@/hooks/use-toast'
+import { useRouter } from 'next/navigation'
 
 interface MemberData {
   id: string
@@ -38,6 +39,7 @@ interface SignalData {
 }
 
 export default function UnifiedMemberDashboard() {
+  const router = useRouter()
   const [member, setMember] = useState<MemberData | null>(null)
   const [signals, setSignals] = useState<SignalData[]>([])
   const [loading, setLoading] = useState(true)
@@ -64,6 +66,23 @@ export default function UnifiedMemberDashboard() {
       window.history.replaceState({}, '', '/member-portal/dashboard')
     }
   }, [])
+
+  // SSOT onboarding gate: user must follow admin + enable admin alerts.
+  // Canonical status endpoint: /api/member/onboarding/status
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const res = await fetch('/api/member/onboarding/status', { cache: 'no-store' })
+        if (res.status === 401) return
+        const json = await res.json().catch(() => null)
+        if (json && json.ok === false) {
+          router.replace('/member-portal/onboarding')
+        }
+      } catch {
+        // Fail open on transient onboarding status errors to avoid blocking login.
+      }
+    })()
+  }, [router])
 
   async function loadMemberData() {
     try {

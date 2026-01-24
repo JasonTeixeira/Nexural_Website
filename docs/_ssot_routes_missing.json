@@ -1,0 +1,34 @@
+{
+  "generated_at": "2026-01-24T03:02:30.060Z",
+  "missing": {
+    "pages": {
+      "keep": [
+        "/admin/moderation",
+        "/admin/referrals",
+        "/briefs/market-brief",
+        "/marketplace/products/[productId]",
+        "/marketplace/sellers",
+        "/marketplace/sellers/[sellerId]",
+        "/member-portal/following",
+        "/member-portal/messages",
+        "/member-portal/notifications"
+      ],
+      "migrate": [
+        "/feed"
+      ],
+      "review": [
+        "/admin/build-status",
+        "/member-portal/community",
+        "/member-portal/journal/import",
+        "/member-portal/marketplace/[productId]",
+        "/member-portal/marketplace/sell",
+        "/member-portal/marketplace/sell/[productId]",
+        "/api/journal/analytics/summary",
+        "/api/journal/import",
+        "/api/journal/import-templates",
+        "/api/watchlist/:id",
+        "/api/watchlist/quote/:ticker"
+      ]
+    }
+  }
+}
