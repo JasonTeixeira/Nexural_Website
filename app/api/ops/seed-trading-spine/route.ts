@@ -26,15 +26,21 @@ export async function POST(request: Request) {
     request.headers.get('x-seed-token') ||
     request.headers.get('X-Seed-Token')
 
+  const url = new URL(request.url)
+  const tokenFromQuery = url.searchParams.get('token')
+
   const expected = process.env.CRON_SECRET
 
-  if (!expected || !token || token.trim() !== expected.trim()) {
+  const provided = token || tokenFromQuery
+
+  if (!expected || !provided || provided.trim() !== expected.trim()) {
     return NextResponse.json(
       {
         error: 'Unauthorized',
         debug: {
           hasCronSecret: !!expected,
-          tokenPrefix: token ? token.slice(0, 6) : null,
+          tokenPrefix: provided ? provided.slice(0, 6) : null,
+          via: token ? 'header' : tokenFromQuery ? 'query' : null,
         },
       },
       { status: 401 }
