@@ -25,34 +25,67 @@ export async function POST(request: Request) {
     const body = await request.json()
     const supabase = createClient()
 
-    // Insert position
+    // Insert position (DB-aligned schema)
+    // NOTE: trading_positions constraints enforce:
+    // - direction: LONG | SHORT
+    // - status: active | closed
+    const symbol = String(body.symbol || body.ticker || '').toUpperCase()
+    const direction = String(body.direction || '').toUpperCase()
+    const status = String(body.status || 'active').toLowerCase()
+    const entry_price = Number(body.entry_price)
+    const current_price = Number(body.current_price ?? body.entry_price)
+    const stop_loss = Number(body.stop_loss)
+    const quantity = body.quantity === null || body.quantity === undefined ? null : Number(body.quantity)
+    const position_size = Number(body.position_size ?? 1)
+    const position_type = body.position_type ? String(body.position_type) : null
+    const entry_date = body.entry_date ? new Date(body.entry_date).toISOString() : new Date().toISOString()
+    const targets = Array.isArray(body.targets)
+      ? body.targets.map((t: any) => Number(t)).filter((n: any) => Number.isFinite(n))
+      : []
+
+    if (!symbol) return NextResponse.json({ error: 'symbol is required' }, { status: 400 })
+    if (!['LONG', 'SHORT'].includes(direction)) {
+      return NextResponse.json({ error: 'direction must be LONG or SHORT' }, { status: 400 })
+    }
+    if (!['active', 'closed'].includes(status)) {
+      return NextResponse.json({ error: 'status must be active or closed' }, { status: 400 })
+    }
+    if (!Number.isFinite(entry_price) || entry_price <= 0) {
+      return NextResponse.json({ error: 'entry_price must be a positive number' }, { status: 400 })
+    }
+    if (!Number.isFinite(current_price) || current_price <= 0) {
+      return NextResponse.json({ error: 'current_price must be a positive number' }, { status: 400 })
+    }
+    if (!Number.isFinite(stop_loss) || stop_loss <= 0) {
+      return NextResponse.json({ error: 'stop_loss must be a positive number' }, { status: 400 })
+    }
+    if (!Number.isFinite(position_size) || position_size <= 0) {
+      return NextResponse.json({ error: 'position_size must be a positive number' }, { status: 400 })
+    }
+    if (targets.length === 0) {
+      return NextResponse.json({ error: 'targets must be a non-empty array of numbers' }, { status: 400 })
+    }
+
     const { data: position, error } = await supabase
       .from('trading_positions')
       .insert({
-        ticker: body.ticker,
-        company_name: body.company_name,
-        asset_type: body.asset_type || 'stock',
-        direction: body.direction,
-        status: body.status || 'entered',
-        entry_date: body.entry_date || new Date().toISOString(),
-        entry_price: body.entry_price,
-        current_avg_price: body.current_avg_price || body.entry_price,
-        current_price: body.current_price || body.entry_price,
-        shares_contracts: body.shares_contracts,
-        stop_loss: body.stop_loss,
-        target_1: body.target_1,
-        target_2: body.target_2 || null,
-        target_3: body.target_3 || null,
-        sector: body.sector,
-        setup_type: body.setup_type,
-        conviction_level: body.conviction_level,
-        thesis: body.thesis,
-        entry_chart_url: body.entry_chart_url || null,
-        tags: body.tags || [],
-        portfolio_weight_pct: body.portfolio_weight_pct || 0,
-        created_by: admin.email,
-      })
-      .select()
+        symbol,
+        direction,
+        entry_price,
+        current_price,
+        stop_loss,
+        targets,
+        position_size,
+        status,
+        entry_date,
+        exit_date: status === 'closed' ? new Date().toISOString() : null,
+        notes: body.notes ? String(body.notes) : null,
+        quantity,
+        position_type,
+        is_public: body.is_public ?? true,
+        allow_comments: body.allow_comments ?? true,
+      } as any)
+      .select('*')
       .single()
 
     if (error) {
@@ -63,18 +96,21 @@ export async function POST(request: Request) {
       )
     }
 
-    // Create initial entry event
+    // Create initial entry event (DB-aligned)
     if (position) {
       await supabase.from('position_events').insert({
         position_id: position.id,
-        event_type: 'entered',
-        event_date: body.entry_date || new Date().toISOString(),
-        price_at_event: body.entry_price,
-        shares_changed: body.shares_contracts,
-        new_total_shares: body.shares_contracts,
-        note: `Initial entry: ${body.thesis.substring(0, 100)}...`,
-        created_by: admin.email,
-      })
+        event_type: 'position.opened',
+        event_data: {
+          entry_price,
+          quantity,
+          direction,
+          stop_loss,
+          targets,
+        },
+        notes: 'Opened (admin)',
+        created_by: admin.id,
+      } as any)
     }
 
     return NextResponse.json({ position }, { status: 201 })
