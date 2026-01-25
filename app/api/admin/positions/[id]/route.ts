@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase-client'
-import { verifyAdminToken } from '@/lib/admin-auth'
+import { requireAdmin, requireRole } from '@/lib/admin-rbac'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,16 +13,12 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Verify admin authentication
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const token = authHeader.substring(7)
-    const admin = verifyAdminToken(token)
-    if (!admin) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Verify admin authentication (RBAC cookie-based)
+    const req = request as unknown as NextRequest
+    const admin = await requireAdmin(req)
+    if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!requireRole(admin, ['owner'])) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const { id } = params
@@ -64,16 +60,12 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Verify admin authentication
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const token = authHeader.substring(7)
-    const admin = verifyAdminToken(token)
-    if (!admin) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Verify admin authentication (RBAC cookie-based)
+    const req = request as unknown as NextRequest
+    const admin = await requireAdmin(req)
+    if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!requireRole(admin, ['owner'])) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const { id } = params

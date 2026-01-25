@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { verifyAdminToken } from '@/lib/admin-auth'
+import { requireAdmin, requireRole } from '@/lib/admin-rbac'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -10,11 +10,8 @@ const supabase = createClient(
 // GET - List all campaigns with pagination and filtering
 export async function GET(request: NextRequest) {
   try {
-    // Check admin authentication
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !verifyAdminToken(authHeader.replace('Bearer ', ''))) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const admin = await requireAdmin(request)
+    if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
@@ -67,10 +64,10 @@ export async function GET(request: NextRequest) {
 // POST - Create new campaign
 export async function POST(request: NextRequest) {
   try {
-    // Check admin authentication
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !verifyAdminToken(authHeader.replace('Bearer ', ''))) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const admin = await requireAdmin(request)
+    if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!requireRole(admin, ['owner', 'content'])) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const body = await request.json()
@@ -119,10 +116,10 @@ export async function POST(request: NextRequest) {
 // PUT - Update campaign
 export async function PUT(request: NextRequest) {
   try {
-    // Check admin authentication
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !verifyAdminToken(authHeader.replace('Bearer ', ''))) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const admin = await requireAdmin(request)
+    if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!requireRole(admin, ['owner', 'content'])) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const body = await request.json()
@@ -170,10 +167,10 @@ export async function PUT(request: NextRequest) {
 // DELETE - Delete campaign
 export async function DELETE(request: NextRequest) {
   try {
-    // Check admin authentication
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !verifyAdminToken(authHeader.replace('Bearer ', ''))) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const admin = await requireAdmin(request)
+    if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!requireRole(admin, ['owner'])) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const { searchParams } = new URL(request.url)

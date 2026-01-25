@@ -1,27 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ServerSessionService } from '@/lib/server-session-service'
+
+// We use cookie-based admin auth (admin_session + admin_authenticated).
+// Logout simply clears cookies.
 
 export async function POST(req: NextRequest) {
   try {
-    const token = req.cookies.get('admin_token')?.value || 
-                  req.headers.get('authorization')?.replace('Bearer ', '')
-    
-    if (token) {
-      await ServerSessionService.destroySession(token)
-    }
-    
     const response = NextResponse.json({
       success: true,
       message: 'Logged out successfully'
     })
 
-    // Clear the admin authentication cookie
-    response.cookies.set('admin_token', '', {
+    // Clear the admin authentication cookies
+    response.cookies.set('admin_session', '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       expires: new Date(0), // Expire immediately
       path: '/'
+    })
+
+    response.cookies.set('admin_authenticated', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      expires: new Date(0),
+      path: '/',
     })
 
     console.log('Admin logout successful')

@@ -44,13 +44,25 @@ describe('/api/admin/deletion-gates cookie auth', () => {
     // Mock supabase client used inside the route
     jest.doMock('@supabase/supabase-js', () => ({
       createClient: () => ({
-        from: () => ({
-          select: () => ({
-            gte: () => ({
-              limit: async () => ({ data: [{ tag: 'ops.deletion_gate_test', created_at: new Date().toISOString() }], error: null }),
+        from: (table: string) => {
+          if (table === 'admin_users') {
+            return {
+              select: () => ({
+                eq: () => ({
+                  single: async () => ({ data: { id: '4', role: 'owner', is_active: true }, error: null }),
+                }),
+              }),
+            }
+          }
+
+          return {
+            select: () => ({
+              gte: () => ({
+                limit: async () => ({ data: [{ tag: 'ops.deletion_gate_test', created_at: new Date().toISOString() }], error: null }),
+              }),
             }),
-          }),
-        }),
+          }
+        },
       }),
     }))
 

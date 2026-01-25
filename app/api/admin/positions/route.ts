@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase-client'
-import { verifyAdminToken } from '@/lib/admin-auth'
+import { requireAdmin, requireRole } from '@/lib/admin-rbac'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,16 +10,12 @@ export const dynamic = 'force-dynamic'
  */
 export async function POST(request: Request) {
   try {
-    // Verify admin authentication
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const token = authHeader.substring(7)
-    const admin = await verifyAdminToken(token)
-    if (!admin) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Verify admin authentication (RBAC cookie-based)
+    const req = request as unknown as NextRequest
+    const admin = await requireAdmin(req)
+    if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!requireRole(admin, ['owner'])) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const body = await request.json()
@@ -109,7 +105,7 @@ export async function POST(request: Request) {
           targets,
         },
         notes: 'Opened (admin)',
-        created_by: admin.id,
+        created_by: admin.adminUserId,
       } as any)
     }
 
@@ -129,17 +125,10 @@ export async function POST(request: Request) {
  */
 export async function GET(request: Request) {
   try {
-    // Verify admin authentication
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const token = authHeader.substring(7)
-    const admin = await verifyAdminToken(token)
-    if (!admin) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    // Verify admin authentication (RBAC cookie-based)
+    const req = request as unknown as NextRequest
+    const admin = await requireAdmin(req)
+    if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const supabase = createClient()
 

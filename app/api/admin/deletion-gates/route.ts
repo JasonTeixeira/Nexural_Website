@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { requireAdminSession, extractToken } from '@/lib/server-session-service'
+import { requireAdmin, requireRole } from '@/lib/admin-rbac'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -12,26 +12,10 @@ export const runtime = 'nodejs'
  * This is the authoritative "traffic=0" measurement.
  */
 export async function GET(req: NextRequest) {
-  // Support both header-based auth (API clients) and cookie-based auth (admin UI).
-  const authHeader = req.headers.get('authorization')
-  const bearer = extractToken(authHeader)
-  const adminTokenCookie = req.cookies.get('admin_token')?.value
-
-  // Production admin UI uses httpOnly cookies:
-  // - admin_session = user id
-  // - admin_authenticated = "true"
-  // So we allow access when those cookies are present.
-  const adminSessionCookie = req.cookies.get('admin_session')?.value
-  const adminAuthenticated = req.cookies.get('admin_authenticated')?.value === 'true'
-
-  if (bearer || adminTokenCookie) {
-    const token = bearer || adminTokenCookie || null
-    const auth = await requireAdminSession(token)
-    if (!auth.authorized) {
-      return NextResponse.json({ error: auth.error || 'Unauthorized' }, { status: 401 })
-    }
-  } else if (!(adminAuthenticated && adminSessionCookie)) {
-    return NextResponse.json({ error: 'No token provided' }, { status: 401 })
+  const admin = await requireAdmin(req)
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!requireRole(admin, ['owner', 'support'])) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
