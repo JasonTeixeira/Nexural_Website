@@ -1,6 +1,6 @@
 # SSOT Compliance Scorecard (WIP)
 
-Generated: **TBD (auto-generated)**
+Generated: **2026-01-25**
 
 Tie-breaker policy: **`docs/SSOT_DONE_CHECKLIST.md` wins** when docs conflict.
 
@@ -36,65 +36,98 @@ This scorecard is the living “single pane of glass” for:
 
 ---
 
-## 🚨 Production incident: Auth is broken (Google/Discord + possibly member/admin)
+## ✅ Production verification (Auth + Env + Redis)
 
-### Observed symptoms (prod: https://www.nexural.io)
-- User reports **"Failed to fetch"** on login flows.
-- Hitting OAuth endpoints returns redirects with **`client_id=undefined`**:
-  - `GET /api/auth/google` → `location: https://accounts.google.com/...client_id=undefined...`
-  - `GET /api/auth/discord` → `location: https://discord.com/...client_id=undefined...`
-  - This is definitive evidence that **Vercel production env vars are missing** for OAuth.
+Production endpoints verified:
+- `GET https://www.nexural.io/api/health/env` → `ok:true` and required env keys present
+- `GET https://www.nexural.io/api/health/redis` → `ok:true`, `configured:true`, `canReadWrite:true`
+- `GET https://www.nexural.io/api/health` → overall `status: healthy` (Sentry still not configured)
 
-### Root cause (high confidence)
-- **Missing Vercel env vars**:
-  - `GOOGLE_CLIENT_ID`
-  - `GOOGLE_CLIENT_SECRET`
-  - `DISCORD_CLIENT_ID` (or not available at runtime)
-  - `DISCORD_CLIENT_SECRET` (or not available at runtime)
-- Additionally, `NEXT_PUBLIC_APP_URL` should be `https://www.nexural.io` (currently observed redirects show `http://nexural.io`).
-
-### Action items (P0)
-1. Set Vercel env vars for **Production + Preview**:
-   - `NEXT_PUBLIC_APP_URL=https://www.nexural.io`
-   - `NEXT_PUBLIC_SITE_URL=https://www.nexural.io` (recommended)
-   - `GOOGLE_CLIENT_ID=...`
-   - `GOOGLE_CLIENT_SECRET=...`
-   - `DISCORD_CLIENT_ID=...`
-   - `DISCORD_CLIENT_SECRET=...`
-2. Ensure Supabase Auth provider redirect URLs include:
-   - `https://www.nexural.io/auth/callback`
-   - `https://www.nexural.io/auth/login`
-3. Confirm Admin auth backing table exists and has an active admin user:
-   - `admin_users` row for `admin@nexural.io`
-4. Re-test:
-   - Member email/password login
-   - Admin email/password login
-   - Google OAuth
-   - Discord OAuth
+Notes:
+- OAuth env vars are present at runtime.
+- Rate limiting is backed by Upstash Redis in production.
+- Observability still missing: configure Sentry DSN.
 
 ---
 
 ## SSOT Document Scores (initial placeholder)
 
-> NOTE: These will be filled with evidence links and gaps as we complete the coverage matrix.
+This repo has strong SSOT **infrastructure** (ledger/events/feed/alerts/leaderboards) but SSOT “done” is gated by:
+- explicit product decisions in `SSOT_DONE_CHECKLIST.md` (many are still not locked)
+- completing missing KEEP pages from inventory
+- deleting legacy systems after traffic=0 windows
+
+**Two numbers we track:**
+- **Repo SSOT %:** implementation maturity of canonical systems + reduction of legacy couplings
+- **Production SSOT %:** repo + ops readiness + observed behavior + deletion-gate windows
+
+### Current headline scores
+- **Repo SSOT:** **87 / 100**
+- **Production SSOT:** **78 / 100**
+
+Why production is lower than repo:
+- deletion-gate window not yet satisfied (requires time)
+- Sentry not configured (ops/observability)
+- some KEEP pages are still missing (inventory drift)
 
 | Document | Score | Status | Notes |
 | --- | ---:| --- | --- |
-| `docs/PRD.md` | TBD | — | |
-| `docs/ARCHITECTURE.md` | TBD | — | |
-| `docs/DOMAIN_MODEL.md` | TBD | — | |
-| `docs/PERMISSIONS_PRIVACY.md` | TBD | — | |
-| `docs/EVENT_TAXONOMY.md` | TBD | — | |
-| `docs/TRADING_LEDGER_SPEC.md` | TBD | — | |
-| `docs/FEED_ALERTS_SPEC.md` | TBD | — | |
-| `docs/LEADERBOARD_DISCOVERY_SPEC.md` | TBD | — | |
-| `docs/REFERRALS_POINTS_SPEC.md` | TBD | — | |
-| `docs/NEWSLETTER_SPEC.md` | TBD | — | |
-| `docs/MARKETPLACE_SPEC.md` | TBD | — | |
-| `docs/KEEP_MIGRATE_DELETE.md` | TBD | — | |
-| `docs/DEPRECATION_DELETE_LIST.md` | TBD | — | |
-| `docs/OPS_RUNBOOK.md` | TBD | — | |
-| `docs/REFACTOR_PLAN.md` | TBD | — | |
+| `docs/PRD.md` | 70 | 🟡 | Solid direction, but “done” decisions in SSOT checklist remain open. |
+| `docs/ARCHITECTURE.md` | 80 | 🟡 | Good domain boundaries; some legacy endpoints still coexist. |
+| `docs/DOMAIN_MODEL.md` | 80 | 🟡 | Canonical nouns present; a few legacy nouns persist (signals/swing_positions). |
+| `docs/PERMISSIONS_PRIVACY.md` | 92 | ✅ | Global portfolio visibility mode enforced + filtered in APIs. |
+| `docs/EVENT_TAXONOMY.md` | 90 | ✅ | Canonical event spine implemented (`position_events`). |
+| `docs/TRADING_LEDGER_SPEC.md` | 85 | 🟡 | Ledger exists; remaining work: invariants + deletion of legacy trade models. |
+| `docs/FEED_ALERTS_SPEC.md` | 88 | 🟡 | Feed+alerts implemented; verify “since-last-visit” UX and scaling/retry semantics. |
+| `docs/LEADERBOARD_DISCOVERY_SPEC.md` | 90 | ✅ | Rollups + privacy filtering implemented (v1). |
+| `docs/REFERRALS_POINTS_SPEC.md` | 82 | 🟡 | Implemented; still needs migration/RLS verification + admin tooling polish. |
+| `docs/NEWSLETTER_SPEC.md` | 90 | ✅ | Subscribe/unsub + idempotency + click tracking implemented. |
+| `docs/MARKETPLACE_SPEC.md` | 75 | 🟡 | MVP shipped; missing reviews/disputes + moderation governance UI. |
+| `docs/KEEP_MIGRATE_DELETE.md` | 85 | 🟡 | Inventory exists; deletion-gate telemetry in place; waiting on traffic=0 windows. |
+| `docs/DEPRECATION_DELETE_LIST.md` | 80 | 🟡 | Legacy inventory exists; deletions pending traffic window. |
+| `docs/OPS_RUNBOOK.md` | 78 | 🟡 | Env/Redis verified in prod; Sentry still missing; add incident playbooks over time. |
+| `docs/REFACTOR_PLAN.md` | 85 | 🟡 | Phases align; remaining work is executing deletion + missing feature pages. |
+
+---
+
+## Phase completion (from `SSOT_PHASE_COMPLETION.md`)
+
+- **Phase 1 (Canonical ledger + events):** 🟡 Mostly implemented
+  - Remaining: eliminate legacy models (`signals`, `swing_positions`, `live_trades`) and unify admin surfaces.
+- **Phase 2 (Daily habit loop: follow-admin + feed + alerts):** 🟡 Partial
+  - Remaining: prove follow-admin onboarding gate E2E; validate since-last-visit.
+- **Phase 3 (Leaderboards + discovery):** ✅ Implemented (v1)
+- **Phase 4 (Journaling + import):** 🟡 Partial/unclear
+- **Phase 5 (Marketplace polish):** 🟡 MVP shipped, polish missing
+
+---
+
+## Current “Definition of Done” status (from `SSOT_DONE_CHECKLIST.md`)
+
+The SSOT Done Checklist currently has **0/27 boxes checked** in the doc (meaning the decisions are not formally locked in writing yet).
+
+Recommended next action: mark explicit decisions as agreed and check them off.
+
+---
+
+## Top remaining gaps to reach “fully SSOT compliant”
+
+### P0 (blocks safe deletion / SSOT credibility)
+1) **Deletion-gate telemetry visibility in Vercel logs**
+   - We triggered a legacy endpoint, but Vercel Logs UI did not show `DELETION_GATE_HIT`.
+   - Fix: ensure structured logs go to stdout (no logger swallowing), and verify in prod.
+2) **Follow-admin onboarding gate: prove E2E**
+   - Add an automated test that fails if onboarding can be completed without the follow.
+
+### P1 (complete SSOT inventory + remove drift)
+3) Implement missing KEEP pages or update SSOT inventory:
+   - `/admin/moderation`, `/admin/referrals`, `/briefs/market-brief`, `/marketplace/products/[productId]`, `/marketplace/sellers`, `/marketplace/sellers/[sellerId]`,
+     `/member-portal/following`, `/member-portal/messages`, `/member-portal/notifications`
+
+### P2 (ops + polish)
+4) Configure Sentry (health currently reports not configured)
+5) Marketplace governance: reviews + disputes + admin moderation UI
+
 
 ---
 
