@@ -76,11 +76,20 @@ export async function POST(request: Request) {
       ? await svc.from('follows').select('follower_id').eq('following_id', followingId)
       : { data: [] as any[] }
 
+    // user_notifications.user_id references public.members(id), not auth.users.
+    // Followers may contain auth user ids; filter to only member ids to avoid FK failures.
     const followerIds = Array.from(new Set((followersRes.data || []).map((r: any) => r.follower_id))).filter(Boolean)
-    if (!isAdmin && followerIds.length === 0) continue
+
+    const { data: memberRows } = followerIds.length
+      ? await svc.from('members').select('id').in('id', followerIds)
+      : { data: [] as any[] }
+
+    const memberIds = new Set((memberRows || []).map((m: any) => m.id))
+    const deliverableFollowerIds = followerIds.filter((id) => memberIds.has(id))
+    if (!isAdmin && deliverableFollowerIds.length === 0) continue
 
     // Admin alerts: default ON via alert_preferences (row may not exist; treat as true).
-    let recipients: string[] = followerIds
+    let recipients: string[] = deliverableFollowerIds
 
     // Admin alerts: filter recipients by alert_preferences (default ON if row missing).
     if (isAdmin) {
@@ -90,7 +99,7 @@ export async function POST(request: Request) {
         const { data: prefs } = await svc
           .from('alert_preferences')
           .select('user_id,admin_trade_alerts_enabled')
-          .in('user_id', followerIds)
+          .in('user_id', deliverableFollowerIds)
 
         const enabled = new Set(
           (prefs || [])
@@ -100,7 +109,7 @@ export async function POST(request: Request) {
 
         // If a user has no row in alert_preferences, treat as enabled.
         const hasRow = new Set((prefs || []).map((p: any) => p.user_id))
-        recipients = followerIds.filter((id) => enabled.has(id) || !hasRow.has(id))
+        recipients = deliverableFollowerIds.filter((id) => enabled.has(id) || !hasRow.has(id))
       }
     }
 
@@ -125,7 +134,7 @@ export async function POST(request: Request) {
       const { data: settings } = await svc
         .from('follow_notification_settings')
         .select('user_id,position_opened,position_closed,position_stop_hit,position_target_hit')
-        .in('user_id', followerIds)
+        .in('user_id', deliverableFollowerIds)
         .eq('following_id', (ev as any).created_by)
 
       const allow = new Set(

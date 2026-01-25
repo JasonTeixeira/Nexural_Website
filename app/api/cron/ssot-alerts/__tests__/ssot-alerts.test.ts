@@ -5,12 +5,14 @@ function makeServiceSupabaseMock(opts?: {
   follows?: any[]
   alertPrefs?: any[]
   followSettings?: any[]
+  members?: any[]
   adminPositionIds?: Set<string>
 }) {
   const events = opts?.events || []
   const follows = opts?.follows || []
   const alertPrefs = opts?.alertPrefs || []
   const followSettings = opts?.followSettings || []
+  const members = opts?.members || []
   const adminPositionIds = opts?.adminPositionIds || new Set<string>()
 
   const select = jest.fn().mockReturnThis()
@@ -56,6 +58,12 @@ function makeServiceSupabaseMock(opts?: {
         eq: jest.fn().mockResolvedValue({ data: followSettings, error: null }),
       }
     }
+    if (table === 'members') {
+      return {
+        select: jest.fn().mockReturnThis(),
+        in: jest.fn().mockResolvedValue({ data: members, error: null }),
+      }
+    }
     if (table === 'trading_positions') {
       return {
         select: jest.fn().mockReturnThis(),
@@ -63,7 +71,7 @@ function makeServiceSupabaseMock(opts?: {
           return {
             maybeSingle: jest.fn().mockResolvedValue({
               data: adminPositionIds.has(positionId)
-                ? { id: positionId, ticker: 'AAPL', company_name: 'Apple', created_by: 'admin' }
+                ? { id: positionId, symbol: 'AAPL' }
                 : null,
               error: null,
             }),
@@ -101,12 +109,12 @@ describe('SSOT alerts cron dispatcher', () => {
           id: 'e1',
           position_id: 'p1',
           event_type: 'position.opened',
-          event_date: new Date().toISOString(),
-          actor_id: 'member1',
-          amendment_class: null,
+          created_at: new Date().toISOString(),
+          created_by: 'member1',
         },
       ],
       follows: [{ follower_id: 'u1' }],
+      members: [{ id: 'u1' }],
       followSettings: [
         { user_id: 'u1', position_opened: false, position_closed: false, position_stop_hit: false, position_target_hit: false },
       ],
@@ -131,13 +139,13 @@ describe('SSOT alerts cron dispatcher', () => {
           id: 'e2',
           position_id: 'tp1',
           event_type: 'position.opened',
-          event_date: new Date().toISOString(),
-          actor_id: 'adminActor',
-          amendment_class: null,
+          created_at: new Date().toISOString(),
+          created_by: 'adminActor',
         },
       ],
       adminPositionIds: new Set(['tp1']),
       follows: [{ follower_id: 'u2' }, { follower_id: 'u3' }],
+      members: [{ id: 'u2' }, { id: 'u3' }],
       alertPrefs: [{ user_id: 'u3', admin_trade_alerts_enabled: false }],
     })
 
