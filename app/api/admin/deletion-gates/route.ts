@@ -12,8 +12,11 @@ export const runtime = 'nodejs'
  * This is the authoritative "traffic=0" measurement.
  */
 export async function GET(req: NextRequest) {
+  // Support both header-based auth (API clients) and cookie-based auth (admin UI).
   const authHeader = req.headers.get('authorization')
-  const token = extractToken(authHeader)
+  const bearer = extractToken(authHeader)
+  const cookieToken = req.cookies.get('admin_token')?.value
+  const token = bearer || cookieToken || null
   const auth = await requireAdminSession(token)
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.error || 'Unauthorized' }, { status: 401 })
