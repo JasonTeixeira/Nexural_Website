@@ -115,16 +115,10 @@ export async function POST(request: Request) {
               ? 'Target hit'
               : 'Position amended'
 
-    const notifType =
-      ev.event_type === 'position.opened'
-        ? 'position_opened'
-        : ev.event_type === 'position.closed'
-          ? 'position_closed'
-          : ev.event_type === 'position.stop_hit'
-            ? 'position_stop_hit'
-            : ev.event_type === 'position.target_hit'
-              ? 'position_target_hit'
-              : 'position_closed'
+    // NOTE: `user_notifications.notification_type` is currently constrained.
+    // Until we extend the DB constraint/migration, map SSOT alerts to an
+    // existing allowed value.
+    const notifType = 'system_alert'
 
     // Member alerts: OFF by default (SSOT). Only notify followers who opted in.
     if (!isAdmin && followerIds.length > 0) {
