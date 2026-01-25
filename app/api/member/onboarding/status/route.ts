@@ -34,9 +34,11 @@ export async function GET(_req: NextRequest) {
     )
   }
 
+  // SSOT canonical follow table is `follows`.
+  // `user_follows` is legacy and may have FK constraints that block onboarding.
   const { data: followRow } = await supabase
     .from('follows')
-    .select('follower_id')
+    .select('id')
     .eq('follower_id', user.id)
     .eq('following_id', adminUserId)
     .maybeSingle()

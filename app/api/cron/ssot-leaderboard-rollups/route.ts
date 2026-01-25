@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { acquireRedisLock } from '@/lib/redis-lock'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,6 +21,11 @@ export async function POST(request: Request) {
   const token = request.headers.get('x-cron-token')
   if (!process.env.CRON_SECRET || token !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const lock = await acquireRedisLock({ key: 'lock:cron:ssot-leaderboard-rollups', ttlSeconds: 60 })
+  if (!lock.acquired) {
+    return NextResponse.json({ ok: true, skipped: true, reason: 'lock_held' })
   }
 
   const svc = createServiceClient()

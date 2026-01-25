@@ -1,15 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase-client'
-import { MemberPortalLayout } from '@/components/member-portal-layout'
+import { createClient } from '@/lib/supabase/client'
+import { MemberPortalLayoutNew } from '@/components/member-portal-layout-new'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { TrendingUp, TrendingDown, Activity, DollarSign, Signal, AlertCircle, Calendar } from 'lucide-react'
+import { TrendingUp, TrendingDown, Activity, DollarSign, AlertCircle, Calendar } from 'lucide-react'
 import Link from 'next/link'
-import { SwingPositionsWidget } from '@/components/positions/swing-positions-widget'
+import { SSOTPositionsWidget } from '@/components/positions/ssot-positions-widget'
 import { DiscordConnectionCard } from '@/components/discord-connection-card'
 import { AlgoTradingHeroBanner } from '@/components/algo-trading/algo-trading-hero-banner'
 import { toast } from '@/hooks/use-toast'
@@ -26,22 +26,11 @@ interface MemberData {
   created_at: string
 }
 
-interface SignalData {
-  id: string
-  symbol: string
-  action: string
-  entry_price: number
-  target_price: number
-  stop_loss: number
-  confidence: number
-  status: string
-  created_at: string
-}
-
 export default function UnifiedMemberDashboard() {
   const router = useRouter()
   const [member, setMember] = useState<MemberData | null>(null)
-  const [signals, setSignals] = useState<SignalData[]>([])
+  // Legacy note: the previous dashboard displayed `signals` (separate table/model).
+  // SSOT stance: signals are represented by canonical positions + events/feed.
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -112,17 +101,6 @@ export default function UnifiedMemberDashboard() {
 
       setMember(memberData)
 
-      // Get recent signals
-      const { data: signalsData, error: signalsError } = await supabase
-        .from('signals')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(10)
-
-      if (!signalsError && signalsData) {
-        setSignals(signalsData)
-      }
-
       setLoading(false)
     } catch (err) {
       setError('An error occurred loading your dashboard')
@@ -137,20 +115,20 @@ export default function UnifiedMemberDashboard() {
 
   if (loading) {
     return (
-      <MemberPortalLayout>
+      <MemberPortalLayoutNew>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <Activity className="h-12 w-12 animate-spin mx-auto mb-4" />
             <p className="text-lg">Loading your dashboard...</p>
           </div>
         </div>
-      </MemberPortalLayout>
+      </MemberPortalLayoutNew>
     )
   }
 
   if (error || !member) {
     return (
-      <MemberPortalLayout>
+      <MemberPortalLayoutNew>
         <div className="flex items-center justify-center min-h-screen">
           <Card className="w-full max-w-md">
             <CardHeader>
@@ -162,22 +140,20 @@ export default function UnifiedMemberDashboard() {
             <CardContent>
               <p className="mb-4">{error || 'Unable to load dashboard'}</p>
               <Button asChild>
-                <Link href="/member-login">Go to Login</Link>
+                <Link href="/auth/login">Go to Login</Link>
               </Button>
             </CardContent>
           </Card>
         </div>
-      </MemberPortalLayout>
+      </MemberPortalLayoutNew>
     )
   }
 
-  const activeSignals = signals.filter(s => s.status === 'active').length
-  const totalSignals = signals.length
   const memberSince = new Date(member.created_at)
   const daysSinceMember = Math.floor((Date.now() - memberSince.getTime()) / (1000 * 60 * 60 * 24))
 
   return (
-    <MemberPortalLayout>
+    <MemberPortalLayoutNew>
       <div className="container mx-auto p-6 space-y-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
@@ -197,7 +173,7 @@ export default function UnifiedMemberDashboard() {
               <Link href="/member-portal/account">Account Settings</Link>
             </Button>
             <Button asChild>
-              <Link href="/member-portal/signals">View All Signals</Link>
+              <Link href="/member-portal/feed">View Feed</Link>
             </Button>
           </div>
         </div>
@@ -229,15 +205,15 @@ export default function UnifiedMemberDashboard() {
 
           <Card className="stat-card group">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-medium text-gray-400">Active Signals</CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-400">SSOT Feed</CardTitle>
               <div className="p-2 bg-green-600/20 rounded-lg group-hover:bg-green-600/30 transition-colors">
-                <Signal className="h-5 w-5 text-green-400" />
+                <Activity className="h-5 w-5 text-green-400" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold data-value">{activeSignals}</div>
+              <div className="text-3xl font-bold data-value">Live</div>
               <p className="text-sm text-gray-500 mt-1">
-                {totalSignals} total signals
+                Admin + followed events
               </p>
             </CardContent>
           </Card>
@@ -289,78 +265,14 @@ export default function UnifiedMemberDashboard() {
           onConnectionChange={handleDiscordConnectionChange}
         />
 
-        {/* Swing Positions Widget */}
-        <SwingPositionsWidget />
+        {/* SSOT Positions Widget */}
+        <SSOTPositionsWidget />
 
-        {/* Signals & Activity Tabs */}
-        <Tabs defaultValue="signals" className="space-y-4">
+        {/* Activity Tabs */}
+        <Tabs defaultValue="activity" className="space-y-4">
           <TabsList>
-            <TabsTrigger value="signals">Recent Signals</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
           </TabsList>
-
-          <TabsContent value="signals" className="space-y-4">
-            <Card className="premium-card">
-              <CardHeader>
-                <CardTitle className="text-2xl">Recent Trading Signals</CardTitle>
-                <CardDescription>
-                  Latest signals from our trading system
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {signals.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Signal className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-muted-foreground">No signals yet</p>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Signals will appear here when generated
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {signals.map((signal) => (
-                      <div
-                        key={signal.id}
-                        className="glass-card rounded-xl p-6 hover:border-white/20 transition-all animate-fade-in"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className={`p-2 rounded-full ${
-                            signal.action === 'BUY' ? 'bg-green-100 dark:bg-green-900' : 'bg-red-100 dark:bg-red-900'
-                          }`}>
-                            {signal.action === 'BUY' ? (
-                              <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
-                            ) : (
-                              <TrendingDown className="h-5 w-5 text-red-600 dark:text-red-400" />
-                            )}
-                          </div>
-                          <div>
-                            <p className="font-semibold">{signal.symbol}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {signal.action} @ ${signal.entry_price}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold">Target: ${signal.target_price}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Stop: ${signal.stop_loss}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <Badge variant={signal.status === 'active' ? 'default' : 'secondary'}>
-                            {signal.status}
-                          </Badge>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {new Date(signal.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           <TabsContent value="activity" className="space-y-4">
             <Card className="premium-card">
@@ -409,7 +321,7 @@ export default function UnifiedMemberDashboard() {
           </CardHeader>
           <CardContent className="flex flex-wrap gap-4">
             <Button asChild>
-              <Link href="/member-portal/signals">View All Signals</Link>
+              <Link href="/member-portal/feed">View Feed</Link>
             </Button>
             {!member.discord_user_id && (
               <Button asChild variant="outline">
@@ -425,6 +337,6 @@ export default function UnifiedMemberDashboard() {
           </CardContent>
         </Card>
       </div>
-    </MemberPortalLayout>
+    </MemberPortalLayoutNew>
   )
 }

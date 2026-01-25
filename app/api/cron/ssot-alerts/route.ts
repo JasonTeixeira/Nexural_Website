@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { activityWriter } from '@/lib/activity-writer'
+import { acquireRedisLock } from '@/lib/redis-lock'
 // NOTE: ADMIN_USER_ID is optional; if missing, admin-event fanout is skipped.
 
 export const dynamic = 'force-dynamic'
@@ -23,6 +24,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  // Concurrency guard: prevent overlapping cron runs.
+  const lock = await acquireRedisLock({ key: 'lock:cron:ssot-alerts', ttlSeconds: 60 })
+  if (!lock.acquired) {
+    return NextResponse.json({ ok: true, skipped: true, reason: 'lock_held' })
+  }
+
   const svc = createServiceClient()
   const adminUserId = process.env.ADMIN_USER_ID || null
   const sinceMinutes = Number(new URL(request.url).searchParams.get('sinceMinutes') || '60')
@@ -38,6 +45,7 @@ export async function POST(request: Request) {
   if (evErr) return NextResponse.json({ error: evErr.message }, { status: 500 })
 
   let sent = 0
+  try {
   for (const ev of events || []) {
     // Only alert for amendments if economic and opted-in (default OFF).
     if (ev.event_type === 'position.amended' && ev.amendment_class !== 'economic') continue
@@ -161,4 +169,7 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({ ok: true, events: (events || []).length, notificationsSent: sent })
+  } finally {
+    await lock.release()
+  }
 }

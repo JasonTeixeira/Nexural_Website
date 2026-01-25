@@ -23,16 +23,22 @@ export async function POST(_req: NextRequest) {
     return NextResponse.json({ error: 'ADMIN_USER_ID is not configured' }, { status: 500 })
   }
 
-  // 1) Ensure follow-admin
-  const { error: followErr } = await supabase.from('follows').insert({
-    follower_id: user.id,
-    following_id: adminUserId,
-    created_at: new Date().toISOString(),
-  })
+  // 1) Ensure follow-admin (SSOT canonical follow table: `follows`)
+  const { error: followErr } = await supabase.from('follows').upsert(
+    {
+      follower_id: user.id,
+      following_id: adminUserId,
+      created_at: new Date().toISOString(),
+    } as any,
+    {
+      // Idempotent if DB has a UNIQUE(follower_id, following_id).
+      onConflict: 'follower_id,following_id',
+    } as any
+  )
 
-  // Ignore unique violations / already-following; treat other errors as warnings.
-  if (followErr && !String(followErr.message || '').toLowerCase().includes('duplicate')) {
-    console.warn('onboarding.complete follow insert error:', followErr)
+  // If the table or constraints are misconfigured, still surface the error.
+  if (followErr) {
+    return NextResponse.json({ error: followErr.message }, { status: 500 })
   }
 
   // 2) Ensure admin alerts enabled (idempotent upsert)

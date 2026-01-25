@@ -8,6 +8,7 @@ import {
 } from '@/lib/discord-database'
 import { headers } from 'next/headers'
 import { verifyWebhookRequest } from '@/lib/rate-limiter'
+import { wasWebhookEventProcessed, markWebhookEventProcessed } from '@/lib/webhook-idempotency'
 
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!
 
@@ -46,6 +47,11 @@ export async function POST(req: NextRequest) {
 
   console.log('Stripe webhook event:', event.type)
 
+  // Idempotency: Stripe retries webhooks; skip if already processed.
+  if (await wasWebhookEventProcessed({ provider: 'stripe', eventId: event.id })) {
+    return NextResponse.json({ received: true, deduped: true })
+  }
+
   try {
     switch (event.type) {
       case 'checkout.session.completed':
@@ -76,6 +82,8 @@ export async function POST(req: NextRequest) {
         console.log(`Unhandled event type: ${event.type}`)
     }
 
+    // Mark processed AFTER successful handling.
+    await markWebhookEventProcessed({ provider: 'stripe', eventId: event.id })
     return NextResponse.json({ received: true })
   } catch (error) {
     console.error('Error processing webhook:', error)

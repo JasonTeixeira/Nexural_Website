@@ -6,6 +6,7 @@ import { enforceMemberEntitlement } from '@/lib/entitlements-api'
 import { createClient } from '@/lib/supabase/server'
 import { MemberPositionsLedgerRepository } from '@/lib/trading-ledger/repository-member-positions'
 import type { AmendmentClass } from '@/lib/trading-ledger/types'
+import { CacheTTL, CacheKeys, CacheService } from '@/lib/cache-service'
 
 export async function GET(request: NextRequest) {
   try {
@@ -47,24 +48,44 @@ export async function GET(request: NextRequest) {
     const repo = new MemberPositionsLedgerRepository()
     const repoStatus = (status === 'all' ? 'all' : (status as any))
 
-    const { positions } = await repo.listPositions({
-      owner_type: 'member',
-      user_id: auth.user.id,
-      status: repoStatus,
-      limit,
-    })
+    // Cache per-user, per-filter list for snappy member portal.
+    // TTL is short because positions can change; we invalidate on writes below.
+    const cacheKey = `${CacheKeys.positions(auth.user.id)}:${repoStatus}:${limit}`
+    const cached = await CacheService.get<any>(cacheKey)
+    const positions = cached?.positions
+      ? (cached.positions as any[])
+      : (
+          await repo.listPositions({
+            owner_type: 'member',
+            user_id: auth.user.id,
+            status: repoStatus,
+            limit,
+          })
+        ).positions
+
+    if (!cached) {
+      await CacheService.set(cacheKey, { positions }, CacheTTL.SHORT)
+    }
 
     // Privacy-by-default (SSOT): only return the authenticated user's positions.
     // (Enforced by user_id filter above.)
 
-    return NextResponse.json({
+    return NextResponse.json(
+      {
       positions,
       summary: {
         total: positions.length,
         open: positions.filter((p) => p.status === 'open').length,
         closed: positions.filter((p) => p.status === 'closed').length,
       },
-    })
+      },
+      {
+        headers: {
+          'X-Cache': cached ? 'HIT' : 'MISS',
+          'X-Cache-Key': cacheKey,
+        },
+      }
+    )
 
   } catch (error) {
     console.error('Positions API error:', error)
@@ -141,6 +162,10 @@ export async function POST(request: NextRequest) {
     // Return canonical mapped shape via repository adapter
     const repo = new MemberPositionsLedgerRepository()
     const { position } = await repo.getPositionById(data.id)
+
+    // Invalidate cached position lists for this user.
+    // (Upstash does not support scan-based pattern deletes; delete the base key only.)
+    await CacheService.delete(CacheKeys.positions(auth.user.id))
 
     return NextResponse.json({ position }, { status: 201 })
   } catch (error) {

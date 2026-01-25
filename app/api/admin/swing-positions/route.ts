@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { emitDeletionGateHit } from '@/lib/deletion-gate'
 import { FallbackAuth } from '@/lib/fallback-auth'
 import { discordAPI } from '@/lib/discord'
 
@@ -13,6 +14,7 @@ const supabase = createClient(
  * List all swing positions (active and historical)
  */
 export async function GET(request: NextRequest) {
+  emitDeletionGateHit('legacy.api.admin.swing_positions', { method: 'GET' })
   try {
     // Verify admin authentication
     const token = request.cookies.get('admin_token')?.value
@@ -89,6 +91,7 @@ export async function GET(request: NextRequest) {
  * Create a new swing position
  */
 export async function POST(request: NextRequest) {
+  emitDeletionGateHit('legacy.api.admin.swing_positions', { method: 'POST' })
   try {
     // Verify admin authentication
     const token = request.cookies.get('admin_token')?.value
@@ -253,6 +256,7 @@ export async function POST(request: NextRequest) {
  * Update an existing swing position
  */
 export async function PUT(request: NextRequest) {
+  emitDeletionGateHit('legacy.api.admin.swing_positions', { method: 'PUT' })
   try {
     // Verify admin authentication
     const token = request.cookies.get('admin_token')?.value
@@ -443,6 +447,7 @@ export async function PUT(request: NextRequest) {
  * Delete a swing position (admin only, use with caution)
  */
 export async function DELETE(request: NextRequest) {
+  emitDeletionGateHit('legacy.api.admin.swing_positions', { method: 'DELETE' })
   try {
     // Verify admin authentication
     const token = request.cookies.get('admin_token')?.value

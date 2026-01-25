@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { emitDeletionGateHit } from '@/lib/deletion-gate'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -12,6 +13,7 @@ const supabase = createClient(
  * Supports filtering by status and searching by symbol
  */
 export async function GET(request: NextRequest) {
+  emitDeletionGateHit('legacy.api.member.signals', { method: 'GET' })
   try {
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status') // active, closed, all

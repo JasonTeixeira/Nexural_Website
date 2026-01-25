@@ -62,13 +62,29 @@ export default function MemberOnboardingGatePage() {
     }
   }
 
+  async function followAdmin() {
+    setError(null)
+    setLoading(true)
+    try {
+      const res = await fetch('/api/member/onboarding/complete', { method: 'POST' })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        setError(body?.error || 'Failed to complete onboarding')
+      }
+    } catch (e: any) {
+      setError(e?.message || 'Failed to complete onboarding')
+    } finally {
+      await load()
+    }
+  }
+
   useEffect(() => {
     load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
-    if (status?.ok) router.push('/member-portal')
+    if (status?.ok) router.push('/member-portal/dashboard')
   }, [status, router])
 
   return (
@@ -143,8 +159,9 @@ export default function MemberOnboardingGatePage() {
                     <RefreshCw className="h-4 w-4 mr-2" />
                     Re-check
                   </Button>
-                  <Button onClick={attemptComplete}>
-                    Complete setup
+                  <Button onClick={attemptComplete}>Complete setup</Button>
+                  <Button onClick={followAdmin} variant="secondary">
+                    Fix automatically
                   </Button>
                   <Link href="/member-portal/settings" className="flex-1">
                     <Button className="w-full">Go to settings</Button>

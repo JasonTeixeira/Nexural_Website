@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { enforceMemberEntitlement } from '@/lib/entitlements-api'
+import { CacheKeys, CacheService, CacheTTL } from '@/lib/cache-service'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,6 +35,19 @@ export async function GET(req: NextRequest) {
   const cursor = url.searchParams.get('cursor')
   const since = url.searchParams.get('since') // ISO timestamp
   const markSeen = url.searchParams.get('markSeen') === '1'
+
+  // Cache only the common case: initial feed page (no cursor/since) and no markSeen.
+  // Personalized per-user because following + safety filters are user-specific.
+  const cacheable = !cursor && !since && !markSeen
+  const cacheKey = `${CacheKeys.activityFeed(user.id)}:limit:${limit}`
+  if (cacheable) {
+    const cached = await CacheService.get<any>(cacheKey)
+    if (cached) {
+      return NextResponse.json(cached, {
+        headers: { 'X-Cache': 'HIT', 'X-Cache-Key': cacheKey },
+      })
+    }
+  }
 
   // Best-effort safety filters
   // SSOT safety rule: a blocked user cannot interact with the blocker, and their
@@ -174,5 +188,15 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ items, nextCursor })
+  const payload = { items, nextCursor }
+
+  if (cacheable) {
+    await CacheService.set(cacheKey, payload, CacheTTL.VERY_SHORT)
+  }
+
+  return NextResponse.json(payload, {
+    headers: cacheable
+      ? { 'X-Cache': 'MISS', 'X-Cache-Key': cacheKey }
+      : { 'X-Cache': 'BYPASS' },
+  })
 }

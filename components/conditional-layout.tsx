@@ -13,13 +13,16 @@ export function ConditionalLayout({ children }: { children: React.ReactNode }) {
     !pathname.startsWith('/admin/forgot-password') &&
     !pathname.startsWith('/admin/reset-password')
 
+  // Member portal has its own navigation chrome; hide the marketing header/footer.
+  const isMemberPortalRoute = pathname?.startsWith('/member-portal')
+
   return (
     <>
-      {!isAdminRoute && <Header />}
+      {!isAdminRoute && !isMemberPortalRoute && <Header />}
       <main role="main">
         {children}
       </main>
-      {!isAdminRoute && <FooterSection />}
+      {!isAdminRoute && !isMemberPortalRoute && <FooterSection />}
     </>
   )
 }

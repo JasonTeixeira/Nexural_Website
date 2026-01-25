@@ -1,12 +1,17 @@
-import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { NextRequest, NextResponse } from 'next/server'
+import { emitDeletionGateHit } from '@/lib/deletion-gate'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// NOTE: This file is legacy/migrate. Keep typing strict enough to satisfy
+// the repo's typecheck while we retain it temporarily.
+type AnyRow = Record<string, any>
 
-export async function GET() {
+// This endpoint is explicitly marked MIGRATE in docs/KEEP_MIGRATE_DELETE.md.
+// We keep it temporarily but emit deletion-gate telemetry so we can safely remove.
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
+export async function GET(request: NextRequest) {
+  emitDeletionGateHit('legacy.api.admin.unified-dashboard', { method: 'GET' })
   try {
     // Fetch all data in parallel for performance
     const [
@@ -61,13 +66,26 @@ export async function GET() {
   }
 }
 
+function getSupabaseAdminClient() {
+  // Lazy import to avoid pulling server-only code into edge bundles.
+  // This route must run in nodejs runtime.
+  const { createClient } = require('@supabase/supabase-js')
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('Supabase credentials not configured')
+  }
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
+}
+
 // ============================================================================
 // IB GATEWAY DATA
 // ============================================================================
 async function getIBGatewayData() {
   try {
+    const supabase = getSupabaseAdminClient()
+
     // Check if IB Gateway is connected (from your existing system)
-    const ibStatus = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/admin/ib-gateway/status`)
+    const origin = requestOrigin()
+    const ibStatus = await fetch(`${origin}/api/admin/ib-gateway/status`)
       .then(res => res.json())
       .catch(() => ({ connected: false }))
 
@@ -91,7 +109,7 @@ async function getIBGatewayData() {
       accountBalance: 0, // Real balance from IB API when connected
       uptime: ibStatus.uptime || 0,
       reconnectAttempts: 0,
-      recentEvents: orders?.map(order => ({
+      recentEvents: (orders as AnyRow[] | null | undefined)?.map((order: AnyRow) => ({
         message: `${order.symbol} ${order.direction} order`,
         timestamp: order.created_at
       })) || [],
@@ -117,6 +135,8 @@ async function getIBGatewayData() {
 // ============================================================================
 async function getDiscordData() {
   try {
+    const supabase = getSupabaseAdminClient()
+
     // Get today's signals
     const today = new Date()
     today.setHours(0, 0, 0, 0)
@@ -165,6 +185,8 @@ async function getDiscordData() {
 // ============================================================================
 async function getNewsletterData() {
   try {
+    const supabase = getSupabaseAdminClient()
+
     // Get total subscribers
     const { count: totalSubscribers } = await supabase
       .from('newsletter_subscribers')
@@ -189,9 +211,9 @@ async function getNewsletterData() {
       .limit(5)
 
     // Calculate average open rate from recent campaigns
-    const campaignsWithStats = recentCampaigns?.filter(c => c.sent_count > 0) || []
+    const campaignsWithStats = (recentCampaigns as AnyRow[] | null | undefined)?.filter((c: AnyRow) => c.sent_count > 0) || []
     const avgOpenRate = campaignsWithStats.length > 0
-      ? campaignsWithStats.reduce((sum, c) => sum + ((c.opens || 0) / c.sent_count * 100), 0) / campaignsWithStats.length
+      ? campaignsWithStats.reduce((sum: number, c: AnyRow) => sum + ((c.opens || 0) / c.sent_count * 100), 0) / campaignsWithStats.length
       : 0
 
     // Get next scheduled campaign
@@ -227,6 +249,8 @@ async function getNewsletterData() {
 // ============================================================================
 async function getMembersData() {
   try {
+    const supabase = getSupabaseAdminClient()
+
     // Get total members
     const { count: total } = await supabase
       .from('members')
@@ -290,6 +314,8 @@ async function getMembersData() {
 // ============================================================================
 async function getPaperTradingData() {
   try {
+    const supabase = getSupabaseAdminClient()
+
     // Get paper trading config
     const { data: config } = await supabase
       .from('paper_trading_config')
@@ -314,7 +340,7 @@ async function getPaperTradingData() {
       .eq('status', 'closed')
       .gte('exit_date', today.toISOString())
 
-    const pnlToday = todayTrades?.reduce((sum, trade) => sum + (trade.pnl || 0), 0) || 0
+    const pnlToday = (todayTrades as AnyRow[] | null | undefined)?.reduce((sum: number, trade: AnyRow) => sum + (trade.pnl || 0), 0) || 0
 
     // Calculate win rate from all closed positions
     const { data: allTrades } = await supabase
@@ -322,7 +348,7 @@ async function getPaperTradingData() {
       .select('pnl')
       .eq('status', 'closed')
 
-    const winningTrades = allTrades?.filter(trade => (trade.pnl || 0) > 0) || []
+    const winningTrades = (allTrades as AnyRow[] | null | undefined)?.filter((trade: AnyRow) => (trade.pnl || 0) > 0) || []
 
     const winRate = allTrades && allTrades.length > 0
       ? Math.round((winningTrades.length / allTrades.length) * 100)
@@ -354,6 +380,8 @@ async function getPaperTradingData() {
 // ============================================================================
 async function getMarketDataInfo() {
   try {
+    const supabase = getSupabaseAdminClient()
+
     // Get data points today
     const today = new Date()
     today.setHours(0, 0, 0, 0)
@@ -369,7 +397,7 @@ async function getMarketDataInfo() {
       .select('symbol')
       .limit(1000)
 
-    const uniqueSymbols = symbolsData ? [...new Set(symbolsData.map(d => d.symbol))] : []
+    const uniqueSymbols = symbolsData ? [...new Set((symbolsData as AnyRow[]).map((d: AnyRow) => d.symbol))] : []
 
     return {
       isConnected: true, // Databento connection
@@ -395,6 +423,8 @@ async function getMarketDataInfo() {
 // ============================================================================
 async function getMLMonitoringData() {
   try {
+    const supabase = getSupabaseAdminClient()
+
     // Get model metadata from database
     const { data: models } = await supabase
       .from('ml_model_metadata')
@@ -402,18 +432,18 @@ async function getMLMonitoringData() {
       .order('created_at', { ascending: false })
 
     // Get active models (most recent version per symbol)
-    const activeModels = models?.filter(m => m.is_active) || []
+    const activeModels = (models as AnyRow[] | null | undefined)?.filter((m: AnyRow) => m.is_active) || []
 
     // Calculate average accuracy
     const avgAccuracy = activeModels.length > 0
-      ? Math.round(activeModels.reduce((sum, m) => sum + (m.accuracy || 0), 0) / activeModels.length)
+      ? Math.round(activeModels.reduce((sum: number, m: AnyRow) => sum + (m.accuracy || 0), 0) / activeModels.length)
       : 0
 
     // Check if training is in progress
-    const isTraining = models?.some(m => m.training_status === 'training') || false
+    const isTraining = (models as AnyRow[] | null | undefined)?.some((m: AnyRow) => m.training_status === 'training') || false
 
     // Get recent models
-    const recentModels = models?.slice(0, 5).map(m => ({
+    const recentModels = (models as AnyRow[] | null | undefined)?.slice(0, 5).map((m: AnyRow) => ({
       name: m.model_name,
       accuracy: Math.round((m.accuracy || 0) * 100),
       version: m.version,
@@ -450,13 +480,18 @@ async function getMLMonitoringData() {
 // ============================================================================
 async function getRevenueData() {
   try {
+    const supabase = getSupabaseAdminClient()
+
     // Get active subscriptions for MRR
     const { data: activeSubscriptions } = await supabase
       .from('members')
       .select('subscription_tier, subscription_price')
       .eq('subscription_status', 'active')
 
-    const mrr = activeSubscriptions?.reduce((sum, sub) => sum + (sub.subscription_price || 0), 0) || 0
+    const mrr = (activeSubscriptions as AnyRow[] | null | undefined)?.reduce(
+      (sum: number, sub: AnyRow) => sum + (sub.subscription_price || 0),
+      0
+    ) || 0
 
     // Get today's revenue
     const today = new Date()
@@ -468,7 +503,10 @@ async function getRevenueData() {
       .eq('subscription_status', 'active')
       .gte('subscription_start_date', today.toISOString())
 
-    const todayRevenue = todayPayments?.reduce((sum, p) => sum + (p.subscription_price || 0), 0) || 0
+    const todayRevenue = (todayPayments as AnyRow[] | null | undefined)?.reduce(
+      (sum: number, p: AnyRow) => sum + (p.subscription_price || 0),
+      0
+    ) || 0
 
     // Get failed payments this month
     const firstDayOfMonth = new Date()
@@ -487,7 +525,7 @@ async function getRevenueData() {
       .select('subscription_tier, subscription_price')
       .eq('subscription_status', 'active')
 
-    const breakdown = allSubscriptions?.reduce((acc: any, sub) => {
+    const breakdown = (allSubscriptions as AnyRow[] | null | undefined)?.reduce((acc: any, sub: AnyRow) => {
       const tier = sub.subscription_tier || 'free'
       if (!acc[tier]) {
         acc[tier] = { plan: tier, count: 0, revenue: 0 }
@@ -500,7 +538,10 @@ async function getRevenueData() {
     const subscriptionBreakdown = Object.values(breakdown || {})
 
     // Calculate total revenue (all time)
-    const totalRevenue = activeSubscriptions?.reduce((sum, sub) => sum + (sub.subscription_price || 0), 0) || 0
+    const totalRevenue = (activeSubscriptions as AnyRow[] | null | undefined)?.reduce(
+      (sum: number, sub: AnyRow) => sum + (sub.subscription_price || 0),
+      0
+    ) || 0
 
     return {
       mrr: Math.round(mrr),
@@ -528,6 +569,8 @@ async function getRevenueData() {
 // ============================================================================
 async function getDatabaseMetrics() {
   try {
+    const supabase = getSupabaseAdminClient()
+
     // Get database size (approximate from row counts)
     const tables = [
       'members', 'signals', 'swing_positions', 'discord_connections'
@@ -600,6 +643,8 @@ async function getDatabaseMetrics() {
 // ============================================================================
 async function getRecentActivity() {
   try {
+    const supabase = getSupabaseAdminClient()
+
     const activities: any[] = []
 
     // Get recent signals
@@ -609,7 +654,7 @@ async function getRecentActivity() {
       .order('created_at', { ascending: false })
       .limit(5)
 
-    signals?.forEach(signal => {
+    ;(signals as AnyRow[] | null | undefined)?.forEach((signal: AnyRow) => {
       activities.push({
         type: 'signal',
         message: `${signal.symbol} ${signal.direction} signal sent`,
@@ -624,7 +669,7 @@ async function getRecentActivity() {
       .order('created_at', { ascending: false })
       .limit(5)
 
-    members?.forEach(member => {
+    ;(members as AnyRow[] | null | undefined)?.forEach((member: AnyRow) => {
       activities.push({
         type: 'member',
         message: `New member: ${member.email}`,
@@ -639,7 +684,7 @@ async function getRecentActivity() {
       .order('sent_at', { ascending: false })
       .limit(3)
 
-    campaigns?.forEach(campaign => {
+    ;(campaigns as AnyRow[] | null | undefined)?.forEach((campaign: AnyRow) => {
       activities.push({
         type: 'newsletter',
         message: `Newsletter sent: ${campaign.subject}`,
@@ -655,4 +700,13 @@ async function getRecentActivity() {
     console.error('Error fetching recent activity:', error)
     return []
   }
+}
+
+function requestOrigin(): string {
+  // Prefer APP_URL/SITE_URL, but fall back to localhost.
+  return (
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    'http://localhost:3000'
+  )
 }

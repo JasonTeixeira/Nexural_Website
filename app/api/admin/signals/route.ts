@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { adminDataService } from '@/lib/admin-data-service'
 import { requireAdminSession, extractToken } from '@/lib/server-session-service'
+import { emitDeletionGateHit } from '@/lib/deletion-gate'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -9,6 +10,7 @@ const supabase = createClient(
 )
 
 export async function GET(request: NextRequest) {
+  emitDeletionGateHit('legacy.api.admin.signals', { method: 'GET' })
   try {
     // Validate admin session
     const authHeader = request.headers.get('authorization')
@@ -42,6 +44,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  emitDeletionGateHit('legacy.api.admin.signals', { method: 'POST' })
   try {
     // Validate admin session
     const authHeader = request.headers.get('authorization')

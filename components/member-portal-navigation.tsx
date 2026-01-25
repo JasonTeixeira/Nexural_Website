@@ -5,8 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { 
   LayoutDashboard, 
-  Signal, 
-  Target, 
+  Newspaper,
   Rocket, 
   Settings, 
   User,
@@ -20,6 +19,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { createClient } from '@/lib/supabase/client'
 
 interface NavigationProps {
   subscriptionTier: string
@@ -52,15 +52,9 @@ export function MemberPortalNavigation({ subscriptionTier, memberName }: Navigat
       badge: null
     },
     {
-      name: 'Signals',
-      href: '/member-portal/signals',
-      icon: Signal,
-      badge: null
-    },
-    {
-      name: 'Swing Positions',
-      href: '/member-portal/swing-positions',
-      icon: Target,
+      name: 'Feed',
+      href: '/member-portal/feed',
+      icon: Newspaper,
       badge: null
     },
     {
@@ -91,9 +85,14 @@ export function MemberPortalNavigation({ subscriptionTier, memberName }: Navigat
   ]
 
   const handleLogout = () => {
-    localStorage.removeItem('member_token')
-    localStorage.removeItem('member_user')
-    window.location.href = '/member-login'
+    // Canonical auth is Supabase session cookies.
+    // Ensure we sign out properly and return to the canonical login route.
+    try {
+      const supabase = createClient()
+      supabase.auth.signOut()
+    } finally {
+      window.location.href = '/auth/login'
+    }
   }
 
   return (

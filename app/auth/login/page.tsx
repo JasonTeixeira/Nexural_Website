@@ -45,8 +45,8 @@ export default function LoginPage() {
         setError(error.message)
         setLoading(false)
       } else {
-        // Login successful - simple redirect
-        router.push('/member-portal')
+        // Login successful
+        router.push('/member-portal/dashboard')
       }
     } catch (err) {
       setError('An error occurred. Please try again.')

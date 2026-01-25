@@ -63,9 +63,14 @@ class InMemoryCache {
 
   constructor() {
     // Cleanup expired entries every minute
+    // Avoid keeping Jest alive with open handles.
     this.cleanupInterval = setInterval(() => {
       this.cleanup()
     }, 60000)
+
+    // `unref()` tells Node this timer should not keep the process running.
+    // Safe in production/serverless and fixes Jest open-handle warnings.
+    this.cleanupInterval.unref?.()
   }
 
   private cleanup() {
