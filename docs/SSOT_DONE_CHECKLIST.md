@@ -21,12 +21,12 @@ See: `docs/DECISIONS_LOCKED_2026-01-25.md`
 - [x] Event taxonomy is defined (`EVENT_TAXONOMY.md`)
 
 ## 3) Tier‑1 deep specs complete
-- [ ] Trading ledger spec complete (`TRADING_LEDGER_SPEC.md`)
-- [ ] Feed & alerts spec complete (`FEED_ALERTS_SPEC.md`)
-- [ ] Leaderboard & discovery spec complete (`LEADERBOARD_DISCOVERY_SPEC.md`)
-- [ ] Referrals & points spec complete (`REFERRALS_POINTS_SPEC.md`)
-- [ ] Newsletter spec complete (`NEWSLETTER_SPEC.md`)
-- [ ] Marketplace spec complete (`MARKETPLACE_SPEC.md`)
+- [x] Trading ledger spec complete (`TRADING_LEDGER_SPEC.md`)
+- [x] Feed & alerts spec complete (`FEED_ALERTS_SPEC.md`)
+- [x] Leaderboard & discovery spec complete (`LEADERBOARD_DISCOVERY_SPEC.md`)
+- [x] Referrals & points spec complete (`REFERRALS_POINTS_SPEC.md`)
+- [x] Newsletter spec complete (`NEWSLETTER_SPEC.md`)
+- [x] Marketplace spec complete (`MARKETPLACE_SPEC.md`)
 
 ## 4) Cleanup and migration inventory exists
 - [ ] Known legacy models documented (`DEPRECATION_DELETE_LIST.md`)

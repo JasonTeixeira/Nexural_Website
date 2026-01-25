@@ -1,5 +1,8 @@
 # Marketplace Spec (Tier‑1 SSOT)
 
+> Status: **Final (2026-01-25)**
+> Tie-breaker: `docs/SSOT_DONE_CHECKLIST.md` + `docs/DECISIONS_LOCKED_2026-01-25.md`
+
 Marketplace is secondary to the core trading‑social loop, but it must be production‑grade: reliable payments, clean entitlements, auditability, and professional trust/safety.
 
 The marketplace enables members to:
@@ -8,6 +11,8 @@ The marketplace enables members to:
 - sell to other members
 
 Platform fee: **20%**.
+
+See: `docs/DECISIONS_LOCKED_2026-01-25.md`
 
 > **SSOT note:** the canonical “can this user download/access?” source of truth is `marketplace_entitlements`.
 

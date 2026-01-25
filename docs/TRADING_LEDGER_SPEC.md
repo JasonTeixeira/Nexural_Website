@@ -1,5 +1,8 @@
 # Trading Ledger Spec (Tier‑1 SSOT)
 
+> Status: **Final (2026-01-25)**
+> Tie-breaker: `docs/SSOT_DONE_CHECKLIST.md` + `docs/DECISIONS_LOCKED_2026-01-25.md`
+
 This document defines the canonical **trade tracking ledger** for Nexural.
 
 It is the foundation for:
@@ -144,6 +147,8 @@ Backfilled/imported positions must be flagged as:
 ### 6.3 Leaderboard inclusion policy (v1 default)
 - Backfilled positions are allowed but must be flagged.
 - Default hardening: exclude backfilled positions from leaderboard until aged **14 days**.
+
+See: `docs/DECISIONS_LOCKED_2026-01-25.md`
 
 ---
 

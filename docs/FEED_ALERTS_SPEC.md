@@ -1,5 +1,8 @@
 # Feed & Alerts Spec (Tier‑1 SSOT)
 
+> Status: **Final (2026-01-25)**
+> Tie-breaker: `docs/SSOT_DONE_CHECKLIST.md` + `docs/DECISIONS_LOCKED_2026-01-25.md`
+
 This document defines the **member daily loop**:
 - feed generation
 - notifications (alerts)
@@ -145,6 +148,8 @@ If a downstream dependency fails (email provider, webhook),
 
 ## 8) Onboarding requirement (follow admin)
 Onboarding success is defined as:
-1) Member follows admin.
+1) Member is strongly prompted to follow admin (skip allowed).
 2) Member sees admin events in their feed.
-3) Member receives at least one admin alert (in-app) successfully.
+3) Member receives at least one admin alert (in-app) successfully (if opted in).
+
+See: `docs/DECISIONS_LOCKED_2026-01-25.md`

@@ -1,5 +1,8 @@
 # Leaderboards & Discovery Spec (Tier‑1 SSOT)
 
+> Status: **Final (2026-01-25)**
+> Tie-breaker: `docs/SSOT_DONE_CHECKLIST.md` + `docs/DECISIONS_LOCKED_2026-01-25.md`
+
 This document defines:
 - how portfolio performance is computed for leaderboards (v1)
 - eligibility rules

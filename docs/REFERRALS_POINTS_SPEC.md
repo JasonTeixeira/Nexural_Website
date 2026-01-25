@@ -1,5 +1,8 @@
 # Referrals & Points Spec (Tier‑1 SSOT)
 
+> Status: **Final (2026-01-25)**
+> Tie-breaker: `docs/SSOT_DONE_CHECKLIST.md` + `docs/DECISIONS_LOCKED_2026-01-25.md`
+
 This document defines the viral growth engine:
 - referral codes
 - attribution rules
