@@ -1,4 +1,5 @@
 import { emitDeletionGateHit } from '@/lib/deletion-gate'
+import { legacySunsetResponse } from '@/lib/legacy-sunset'
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
@@ -13,6 +14,9 @@ const supabase = createClient(
  */
 export async function GET(request: NextRequest) {
   emitDeletionGateHit('legacy.api.trading.performance', { method: 'GET' })
+  // Optional hard stop to prevent new dependencies.
+  // Uncomment to enforce SSOT immediately.
+  // return legacySunsetResponse('/api/positions/stats')
   try {
     const { searchParams } = new URL(request.url);
     const period = searchParams.get('period') || '30'; // days
