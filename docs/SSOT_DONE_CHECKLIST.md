@@ -29,19 +29,19 @@ See: `docs/DECISIONS_LOCKED_2026-01-25.md`
 - [x] Marketplace spec complete (`MARKETPLACE_SPEC.md`)
 
 ## 4) Cleanup and migration inventory exists
-- [ ] Known legacy models documented (`DEPRECATION_DELETE_LIST.md`)
-- [ ] Keep/Migrate/Delete inventory documented (`KEEP_MIGRATE_DELETE.md`)
-- [ ] Deletion gates are explicit (parity + traffic=0 + tests + rollback)
+- [x] Known legacy models documented (`DEPRECATION_DELETE_LIST.md`)
+- [x] Keep/Migrate/Delete inventory documented (`KEEP_MIGRATE_DELETE.md`)
+- [x] Deletion gates are explicit (parity + traffic=0 + tests + rollback)
 
 ## 5) Refactor sequencing agreed
-- [ ] Phased refactor plan exists (`REFACTOR_PLAN.md`)
-- [ ] Phase 1 is “canonical ledger + events” and is agreed as first priority
-- [ ] Acceptance criteria exist for each phase
+- [x] Phased refactor plan exists (`REFACTOR_PLAN.md`)
+- [x] Phase 1 is “canonical ledger + events” and is agreed as first priority
+- [x] Acceptance criteria exist for each phase
 
 ## 6) Operational readiness documented
-- [ ] Ops runbook exists (`OPS_RUNBOOK.md`)
-- [ ] Data integrity checks are defined
-- [ ] Incident response and deployment safety are defined
+- [x] Ops runbook exists (`OPS_RUNBOOK.md`)
+- [x] Data integrity checks are defined
+- [x] Incident response and deployment safety are defined
 
 ---
 

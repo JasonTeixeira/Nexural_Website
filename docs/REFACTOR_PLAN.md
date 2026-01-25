@@ -18,10 +18,20 @@ Success criteria:
 - Every change emits events.
 - Public teaser uses sanitized projections.
 
+Acceptance criteria (explicit):
+- Legacy endpoints tagged DELETE in `KEEP_MIGRATE_DELETE.md` have DB-backed deletion-gate counts = 0 for 14 days.
+- Legacy admin surfaces (`/api/admin/unified-dashboard`, `/api/admin/swing-positions`) either migrated or proven unused and removed.
+- Public teaser projections are enforced in code (no entry/size/targets for admin teaser).
+
 ## Phase 2 — Build the daily habit loop (retention)
-- Mandatory follow-admin onboarding gate.
+- Follow-admin onboarding prompt (skip allowed; see `DECISIONS_LOCKED_2026-01-25.md`).
 - Alerts that are reliable and non-spammy.
 - “Since last visit” feed view.
+
+Acceptance criteria (explicit):
+- Onboarding flow matches the soft prompt decision.
+- Feed shows admin events by default.
+- Alerts only fire for open/close/stop/target.
 
 ## Phase 3 — Leaderboards + discovery
 - Define performance rollups.
@@ -44,4 +54,7 @@ To safely delete legacy code:
    - feature parity confirmed,
    - telemetry confirms zero usage,
    - tests cover the canonical path.
+
+Telemetry definition:
+- Prefer DB-backed deletion gates: `GET /api/admin/deletion-gates?days=14`
 

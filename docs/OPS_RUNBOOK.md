@@ -85,11 +85,26 @@ We only delete legacy routes/tables after satisfying **all** deletion gates in
 - Tests
 - Rollback
 
-To measure “Traffic = 0”, we emit a stable structured log line:
+To measure “Traffic = 0”, we support two equivalent telemetry sinks:
+
+1) **Logs (stdout)**: stable structured log line
+2) **DB-backed sink** (recommended on platforms where request logs hide stdout)
+
+#### 1) Log line format
 
 ```json
 {"type":"DELETION_GATE_HIT","tag":"legacy.api.trading.positions","meta":{"method":"GET"},"ts":"2026-01-19T00:00:00.000Z"}
 ```
+
+#### 2) DB-backed deletion-gate hits (authoritative)
+
+If logs are not reliably queryable (e.g. request-log-only views), we persist hits in Postgres:
+- Table: `deletion_gate_hits`
+- Migration: `supabase/migrations/20260125_deletion_gate_hits.sql`
+
+Admin query endpoint:
+- `GET /api/admin/deletion-gates?days=14`
+  - returns counts per tag for the last N days
 
 #### How to verify traffic
 
