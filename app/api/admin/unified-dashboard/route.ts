@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { emitDeletionGateHit } from '@/lib/deletion-gate'
+import { requireAdmin, requireRole } from '@/lib/admin-rbac'
 
 // NOTE: This file is legacy/migrate. Keep typing strict enough to satisfy
 // the repo's typecheck while we retain it temporarily.
@@ -12,6 +13,11 @@ export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
   emitDeletionGateHit('legacy.api.admin.unified-dashboard', { method: 'GET' })
+  const admin = await requireAdmin(request)
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!requireRole(admin, ['owner', 'support'])) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
   try {
     // Fetch all data in parallel for performance
     const [

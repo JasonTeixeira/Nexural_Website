@@ -44,7 +44,7 @@ const navigationItems: NavItem[] = [
     subItems: [
       { label: 'IB Gateway', href: '/admin/ib-gateway' },
       { label: 'Signals', href: '/admin/signals' },
-      { label: 'Positions', href: '/admin/swing-positions' },
+      { label: 'Positions', href: '/admin/positions' },
       { label: 'Paper Trading', href: '/admin/paper-trading-config' },
     ]
   },
@@ -89,10 +89,16 @@ export function TopNavigation() {
   const router = useRouter()
   const [notifications] = useState(3)
 
-  const handleLogout = () => {
-    localStorage.removeItem('admin_token')
-    localStorage.removeItem('admin_user')
-    router.push('/admin/login')
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/admin/logout', { method: 'POST' })
+    } catch {
+      // best-effort
+    } finally {
+      localStorage.removeItem('admin_token')
+      localStorage.removeItem('admin_user')
+      router.push('/admin/login')
+    }
   }
 
   const isActive = (href: string) => {

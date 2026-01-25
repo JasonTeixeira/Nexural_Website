@@ -1,4 +1,4 @@
-function createReq(url: string, cookies: Record<string, string>) {
+function createDeletionGatesReq(url: string, cookies: Record<string, string>) {
   return {
     url,
     headers: new Headers(),
@@ -34,7 +34,7 @@ describe('/api/admin/deletion-gates cookie auth', () => {
     }))
 
     const { GET } = await import('../route')
-    const res = await GET(createReq('https://example.com/api/admin/deletion-gates?days=1', {}))
+    const res = await GET(createDeletionGatesReq('https://example.com/api/admin/deletion-gates?days=1', {}))
     expect(res.status).toBe(401)
     const body = await res.json()
     expect(body.error).toBeDefined()
@@ -68,7 +68,7 @@ describe('/api/admin/deletion-gates cookie auth', () => {
 
     const { GET: GET2 } = await import('../route')
     const res = await GET2(
-      createReq('https://example.com/api/admin/deletion-gates?days=1', {
+      createDeletionGatesReq('https://example.com/api/admin/deletion-gates?days=1', {
         admin_authenticated: 'true',
         admin_session: '4',
       })
