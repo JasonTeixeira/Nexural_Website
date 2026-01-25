@@ -74,7 +74,6 @@ export class ActivityWriter {
 
   async notify(args: {
     userId: string
-    actorId?: string | null
     type: NotificationType | PositionAlertType
     title: string
     message?: string | null
@@ -100,7 +99,6 @@ export class ActivityWriter {
       .from('user_notifications')
       .insert({
         user_id: args.userId,
-        actor_id: args.actorId || null,
         notification_type: args.type,
         title: args.title,
         message: args.message || null,

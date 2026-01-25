@@ -155,7 +155,6 @@ export async function POST(request: Request) {
       recipients.map((userId) =>
         activityWriter.notify({
           userId,
-          actorId: (ev as any).created_by || null,
           type: notifType as any,
           title,
           message: adminPos?.symbol ? `${adminPos.symbol}` : null,
