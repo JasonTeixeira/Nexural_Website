@@ -37,10 +37,10 @@ export async function POST(request: Request) {
 
   const { data: events, error: evErr } = await svc
     .from('position_events')
-    .select('id,position_id,event_type,event_date,actor_id,amendment_class')
+    .select('id,position_id,event_type,created_at,created_by')
     .in('event_type', ['position.opened', 'position.closed', 'position.stop_hit', 'position.target_hit', 'position.amended'])
-    .gte('event_date', since)
-    .order('event_date', { ascending: true })
+    .gte('created_at', since)
+    .order('created_at', { ascending: true })
 
   if (evErr) return NextResponse.json({ error: evErr.message }, { status: 500 })
 
@@ -48,14 +48,14 @@ export async function POST(request: Request) {
   try {
   for (const ev of events || []) {
     // Only alert for amendments if economic and opted-in (default OFF).
-    if (ev.event_type === 'position.amended' && ev.amendment_class !== 'economic') continue
+    // (DB doesn't currently store amendment_class; treat all amendments as eligible for now.)
 
     const dedupeKey = `ssot_event:${ev.id}`
 
     // Determine if this is an admin position.
     const { data: adminPos } = await svc
       .from('trading_positions')
-      .select('id,ticker,company_name,created_by')
+      .select('id,symbol')
       .eq('id', ev.position_id)
       .maybeSingle()
 
@@ -67,8 +67,8 @@ export async function POST(request: Request) {
       // SSOT: admin follow is mandatory; we use ADMIN_USER_ID as the canonical anchor.
       followingId = adminUserId
     } else {
-      // Member position: actor_id should be the owner.
-      followingId = ev.actor_id || null
+      // Member position: created_by should be the owner.
+      followingId = (ev as any).created_by || null
     }
 
     // Fetch followers
@@ -132,7 +132,7 @@ export async function POST(request: Request) {
         .from('follow_notification_settings')
         .select('user_id,position_opened,position_closed,position_stop_hit,position_target_hit')
         .in('user_id', followerIds)
-        .eq('following_id', ev.actor_id)
+        .eq('following_id', (ev as any).created_by)
 
       const allow = new Set(
         (settings || [])
@@ -155,10 +155,10 @@ export async function POST(request: Request) {
       recipients.map((userId) =>
         activityWriter.notify({
           userId,
-          actorId: ev.actor_id || null,
+          actorId: (ev as any).created_by || null,
           type: notifType as any,
           title,
-          message: adminPos?.ticker ? `${adminPos.ticker}` : null,
+          message: adminPos?.symbol ? `${adminPos.symbol}` : null,
           link: `/positions/${ev.position_id}`,
           metadata: { position_id: ev.position_id, event_type: ev.event_type },
           dedupeKey,
