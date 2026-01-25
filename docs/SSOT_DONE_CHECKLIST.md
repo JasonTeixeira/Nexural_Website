@@ -3,14 +3,16 @@
 This checklist defines when the SSOT is complete enough to refactor safely without guesswork.
 
 ## 1) Product decisions locked
-- [ ] Public teaser policy is explicit (admin entry + size hidden; no inference fields)
-- [ ] Member portfolio privacy policy is explicit (all public OR all private)
-- [ ] Editing policy is explicit (allowed + amendment events + visible history)
-- [ ] Backfill/import policy is explicit (flagged; leaderboard aging rule defined)
-- [ ] Leaderboard model is explicit (v1 positions-derived P&L + capital-at-risk normalization)
-- [ ] Alerts policy is explicit (open/close/stop/target only; anti-spam defaults)
-- [ ] Onboarding gate is explicit (follow admin required)
-- [ ] Marketplace revenue share is explicit (20%)
+- [x] Public teaser policy is explicit (admin entry + size hidden; no inference fields)
+- [x] Member portfolio privacy policy is explicit (all public OR all private)
+- [x] Editing policy is explicit (allowed + amendment events + visible history)
+- [x] Backfill/import policy is explicit (flagged; leaderboard aging rule defined)
+- [x] Leaderboard model is explicit (v1 positions-derived P&L + capital-at-risk normalization)
+- [x] Alerts policy is explicit (open/close/stop/target only; anti-spam defaults)
+- [x] Onboarding gate is explicit (follow admin required)
+- [x] Marketplace revenue share is explicit (20%)
+
+See: `docs/DECISIONS_LOCKED_2026-01-25.md`
 
 ## 2) Architecture and domains defined
 - [ ] Domains and responsibilities are defined (`ARCHITECTURE.md`)
