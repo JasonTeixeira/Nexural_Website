@@ -89,16 +89,22 @@ export async function GET() {
 
     // Fetch recent activity
     const { data: recentActivity, error: activityError } = await supabase
-      .from('position_activity')
-      .select(`
+      .from('position_events')
+      .select(
+        `
         id,
         position_id,
-        activity_type,
-        description,
-        timestamp,
-        positions (symbol)
-      `)
-      .order('timestamp', { ascending: false })
+        event_type,
+        event_date,
+        note,
+        trading_positions!inner (
+          id,
+          ticker,
+          direction
+        )
+        `
+      )
+      .order('event_date', { ascending: false })
       .limit(20)
 
     if (activityError) {
@@ -148,10 +154,10 @@ export async function GET() {
       recentMembers: recentMembers || [],
       recentActivity: (recentActivity || []).map((activity: any) => ({
         id: activity.id,
-        type: activity.activity_type,
-        symbol: activity.positions?.symbol || 'N/A',
-        message: activity.description,
-        timestamp: activity.timestamp,
+        type: activity.event_type,
+        symbol: activity.trading_positions?.ticker || 'N/A',
+        message: activity.note || activity.event_type,
+        timestamp: activity.event_date,
       })),
     }
 
