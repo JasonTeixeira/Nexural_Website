@@ -159,7 +159,6 @@ export async function POST(request: Request) {
           title,
           message: adminPos?.symbol ? `${adminPos.symbol}` : null,
           link: `/positions/${ev.position_id}`,
-          metadata: { position_id: ev.position_id, event_type: ev.event_type },
           dedupeKey,
         })
       )

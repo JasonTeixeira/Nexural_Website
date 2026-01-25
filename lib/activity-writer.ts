@@ -78,22 +78,10 @@ export class ActivityWriter {
     title: string
     message?: string | null
     link?: string | null
-    metadata?: Record<string, any>
     dedupeKey?: string
   }) {
-    const metadata = args.metadata || {}
-
-    if (args.dedupeKey) {
-      const { data: existing } = await this.svc
-        .from('user_notifications')
-        .select('id')
-        .eq('user_id', args.userId)
-        .eq('notification_type', args.type)
-        .contains('metadata', { dedupe_key: args.dedupeKey })
-        .maybeSingle()
-
-      if (existing?.id) return existing
-    }
+    // NOTE: user_notifications table doesn't currently have a `metadata` column.
+    // So we can't do DB-level idempotency here yet.
 
     const { data, error } = await this.svc
       .from('user_notifications')
@@ -103,10 +91,6 @@ export class ActivityWriter {
         title: args.title,
         message: args.message || null,
         link: args.link || null,
-        metadata: {
-          ...metadata,
-          ...(args.dedupeKey ? { dedupe_key: args.dedupeKey } : {}),
-        },
       })
       .select('id')
       .single()
