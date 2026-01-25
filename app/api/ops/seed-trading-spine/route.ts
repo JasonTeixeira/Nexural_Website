@@ -52,23 +52,22 @@ export async function POST(request: Request) {
     // and to ensure we can write events with created_by.
     const supabase = createServiceClient()
 
-    // Find an admin user id to attribute events to.
-    // Prefer ADMIN_USER_ID env, otherwise try to find one in profiles.
-    const adminUserId = process.env.ADMIN_USER_ID || null
-    let createdBy = adminUserId
+    // We must set created_by to an existing auth.users(id) because of FK.
+    // Prefer ADMIN_USER_ID env (should be an auth.users uuid), otherwise fall back
+    // to the first user in auth.users.
+    let createdBy = process.env.ADMIN_USER_ID || null
     if (!createdBy) {
-      const { data } = await supabase
-        .from('profiles')
+      const { data: u } = await supabase
+        .from('auth.users' as any)
         .select('id')
-        .eq('is_admin', true)
         .limit(1)
         .maybeSingle()
-      createdBy = data?.id || null
+      createdBy = (u as any)?.id || null
     }
 
     if (!createdBy) {
       return NextResponse.json(
-        { error: 'No admin user found. Set ADMIN_USER_ID or create an admin profile first.' },
+        { error: 'No auth.users found. Create a user or set ADMIN_USER_ID (auth.users uuid) in Vercel.' },
         { status: 400 }
       )
     }
