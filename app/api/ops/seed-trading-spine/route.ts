@@ -14,9 +14,31 @@ export const dynamic = 'force-dynamic'
  * - targets/stops/partial close events
  */
 export async function POST(request: Request) {
-  const token = request.headers.get('x-cron-token') || request.headers.get('x-seed-token')
-  if (!process.env.CRON_SECRET || token !== process.env.CRON_SECRET) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  // Protection layers:
+  // 1) Vercel deployment protection / bypass token (infrastructure)
+  // 2) Our own CRON_SECRET header (application)
+  //
+  // Note: On some Vercel deployments, header casing/forwarding can vary.
+  // We accept a few common variants.
+  const token =
+    request.headers.get('x-cron-token') ||
+    request.headers.get('X-Cron-Token') ||
+    request.headers.get('x-seed-token') ||
+    request.headers.get('X-Seed-Token')
+
+  const expected = process.env.CRON_SECRET
+
+  if (!expected || !token || token.trim() !== expected.trim()) {
+    return NextResponse.json(
+      {
+        error: 'Unauthorized',
+        debug: {
+          hasCronSecret: !!expected,
+          tokenPrefix: token ? token.slice(0, 6) : null,
+        },
+      },
+      { status: 401 }
+    )
   }
 
   try {
