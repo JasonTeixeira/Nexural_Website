@@ -45,12 +45,6 @@ export default function SettingsPage() {
     discordGeneralChannelId: process.env.DISCORD_GENERAL_CHANNEL_ID || '',
     discordSignalsChannelId: process.env.DISCORD_SIGNALS_CHANNEL_ID || '',
     
-    // IB Gateway
-    ibGatewayHost: process.env.IB_GATEWAY_HOST || '127.0.0.1',
-    ibGatewayPort: process.env.IB_GATEWAY_PORT || '7496',
-    ibGatewayClientId: process.env.IB_GATEWAY_CLIENT_ID || '1',
-    ibGatewayAccountId: process.env.IB_GATEWAY_ACCOUNT_ID || '',
-    
     // Databento
     databentoApiKey: process.env.DATABENTO_API_KEY || '',
     
@@ -107,8 +101,6 @@ export default function SettingsPage() {
         return settings.supabaseUrl && settings.supabaseAnonKey
       case 'discord':
         return settings.discordBotToken && settings.discordGeneralChannelId
-      case 'ibgateway':
-        return settings.ibGatewayHost && settings.ibGatewayPort
       case 'databento':
         return settings.databentoApiKey
       case 'stripe':
@@ -346,80 +338,12 @@ export default function SettingsPage() {
           {/* Trading Settings */}
           <TabsContent value="trading">
             <div className="space-y-6">
-              {/* IB Gateway */}
-              <Card className="bg-gray-800 border-gray-700">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="flex items-center gap-2">
-                        <TrendingUp className="h-5 w-5" />
-                        IB Gateway Configuration
-                      </CardTitle>
-                      <CardDescription>Interactive Brokers Gateway settings</CardDescription>
-                    </div>
-                    <Badge variant="outline" className={getConnectionStatus('ibgateway') ? 'bg-green-900/50 text-green-400 border-green-600' : 'bg-red-900/50 text-red-400 border-red-600'}>
-                      {getConnectionStatus('ibgateway') ? (
-                        <>
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Configured
-                        </>
-                      ) : (
-                        <>
-                          <AlertCircle className="h-3 w-3 mr-1" />
-                          Not Configured
-                        </>
-                      )}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="ibGatewayHost">Host</Label>
-                      <Input
-                        id="ibGatewayHost"
-                        value={settings.ibGatewayHost}
-                        onChange={(e) => setSettings({...settings, ibGatewayHost: e.target.value})}
-                        placeholder="127.0.0.1"
-                        className="bg-gray-900 border-gray-700"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="ibGatewayPort">Port</Label>
-                      <Input
-                        id="ibGatewayPort"
-                        value={settings.ibGatewayPort}
-                        onChange={(e) => setSettings({...settings, ibGatewayPort: e.target.value})}
-                        placeholder="7496"
-                        className="bg-gray-900 border-gray-700"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">7496 = Paper Trading, 7497 = Live Trading</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="ibGatewayClientId">Client ID</Label>
-                      <Input
-                        id="ibGatewayClientId"
-                        value={settings.ibGatewayClientId}
-                        onChange={(e) => setSettings({...settings, ibGatewayClientId: e.target.value})}
-                        placeholder="1"
-                        className="bg-gray-900 border-gray-700"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="ibGatewayAccountId">Account ID</Label>
-                      <Input
-                        id="ibGatewayAccountId"
-                        value={settings.ibGatewayAccountId}
-                        onChange={(e) => setSettings({...settings, ibGatewayAccountId: e.target.value})}
-                        placeholder="DUA790262"
-                        className="bg-gray-900 border-gray-700"
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+                <p className="text-sm text-gray-300">
+                  Trading integrations are limited to **stocks/options** SSOT publishing.
+                  Futures/IB Gateway/paper trading integrations are deprecated and have been removed.
+                </p>
+              </div>
 
               {/* Databento */}
               <Card className="bg-gray-800 border-gray-700">

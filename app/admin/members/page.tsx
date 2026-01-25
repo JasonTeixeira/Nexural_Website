@@ -125,19 +125,9 @@ export default function MembersManagement() {
   }
 
   const loadChannels = async () => {
-    // Keep mock channels for now - these are configuration, not data
-    const mockChannels: ChannelConfig[] = [
-      { symbol: 'ES', name: 'E-mini S&P 500', enabled: true, scheduled: true, tradingHours: '9:30-16:00 EST', color: 'border-blue-500' },
-      { symbol: 'NQ', name: 'E-mini NASDAQ', enabled: true, scheduled: true, tradingHours: '9:30-16:00 EST', color: 'border-green-500' },
-      { symbol: 'YM', name: 'E-mini Dow', enabled: true, scheduled: false, tradingHours: '9:30-16:00 EST', color: 'border-yellow-500' },
-      { symbol: 'RTY', name: 'E-mini Russell', enabled: true, scheduled: true, tradingHours: '9:30-16:00 EST', color: 'border-purple-500' },
-      { symbol: 'BTC', name: 'Bitcoin', enabled: false, scheduled: false, tradingHours: '24/7', color: 'border-orange-500' },
-      { symbol: 'ETH', name: 'Ethereum', enabled: true, scheduled: false, tradingHours: '24/7', color: 'border-cyan-500' },
-      { symbol: 'CL', name: 'Crude Oil', enabled: true, scheduled: true, tradingHours: '9:00-14:30 EST', color: 'border-red-500' },
-      { symbol: 'GC', name: 'Gold', enabled: true, scheduled: true, tradingHours: '8:20-13:30 EST', color: 'border-yellow-400' },
-      { symbol: 'SI', name: 'Silver', enabled: false, scheduled: false, tradingHours: '8:25-13:25 EST', color: 'border-gray-400' }
-    ]
-    setChannels(mockChannels)
+    // SSOT stance: no futures markets / IB gateway / paper trading.
+    // This tab will later be repurposed for community/entitlement controls.
+    setChannels([])
   }
 
   const toggleChannel = (symbol: string) => {
@@ -427,50 +417,9 @@ export default function MembersManagement() {
         {activeTab === 'channels' && (
           <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
             <h2 className="text-2xl font-semibold mb-4 text-purple-400">🎛️ Channel Control & Scheduling</h2>
-            <p className="text-gray-400 mb-6">Enable/disable channels and manage trading hours</p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {channels.map((channel) => (
-                <div key={channel.symbol} className={`bg-gray-700 rounded-lg p-4 border-l-4 ${channel.color}`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <div className="font-bold text-lg text-white">{channel.symbol}</div>
-                      <div className="text-sm text-gray-300">{channel.name}</div>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <button
-                        onClick={() => toggleChannel(channel.symbol)}
-                        className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors duration-200 ${
-                          channel.enabled 
-                            ? 'bg-green-600 text-green-100 hover:bg-green-700' 
-                            : 'bg-red-600 text-red-100 hover:bg-red-700'
-                        }`}
-                      >
-                        {channel.enabled ? '✅ ON' : '❌ OFF'}
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="text-xs text-gray-400 mb-3">
-                    <div><strong>Trading Hours:</strong> {channel.tradingHours}</div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-300">Auto Schedule:</span>
-                    <button
-                      onClick={() => toggleScheduling(channel.symbol)}
-                      className={`px-2 py-1 rounded text-xs font-medium transition-colors duration-200 ${
-                        channel.scheduled 
-                          ? 'bg-blue-600 text-blue-100 hover:bg-blue-700' 
-                          : 'bg-gray-600 text-gray-100 hover:bg-gray-700'
-                      }`}
-                    >
-                      {channel.scheduled ? '🕐 SCHEDULED' : '⏸️ MANUAL'}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <p className="text-gray-400 mb-6">
+              Futures/market channels are deprecated. This area will be rebuilt for community controls.
+            </p>
           </div>
         )}
 
