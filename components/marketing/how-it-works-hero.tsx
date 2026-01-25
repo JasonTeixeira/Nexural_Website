@@ -176,7 +176,7 @@ export function HowItWorksHero() {
 
           {/* CTA */}
           <div className={`flex flex-col sm:flex-row gap-6 justify-center items-center pt-8 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: '1000ms' }}>
-            <a href="https://discord.gg/fTS3Nedk" target="_blank" rel="noopener noreferrer">
+			<a href="https://discord.gg/p8Dy4sQHaR" target="_blank" rel="noopener noreferrer">
               <Button className="group relative overflow-hidden bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-lg px-12 py-4 rounded-xl shadow-2xl hover:shadow-cyan-500/25 transform hover:scale-105 transition-all duration-300 ease-out border border-cyan-400/30 hover:border-cyan-300/50">
                 <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <span className="relative z-10 flex items-center gap-3">

@@ -137,7 +137,7 @@ export function WhoThisIsFor() {
             No credit card. No commitment. Just instant access to everything.
           </p>
           <a
-            href="https://discord.gg/fTS3Nedk"
+			href="https://discord.gg/p8Dy4sQHaR"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold rounded-xl transition-all transform hover:scale-105 shadow-lg"

@@ -77,7 +77,12 @@ export function FooterSection() {
             <a href="/community" className="text-foreground text-sm font-normal leading-5 hover:underline">
               Community
             </a>
-            <a href="https://discord.gg/fTS3Nedk" target="_blank" rel="noopener noreferrer" className="text-foreground text-sm font-normal leading-5 hover:underline">
+            <a
+              href="https://discord.gg/p8Dy4sQHaR"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-foreground text-sm font-normal leading-5 hover:underline"
+            >
               Join Discord
             </a>
           </div>

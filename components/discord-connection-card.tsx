@@ -169,7 +169,7 @@ export function DiscordConnectionCard({
               </Button>
               <Button
                 variant="default"
-                onClick={() => window.open('https://discord.gg/nexural', '_blank')}
+				onClick={() => window.open('https://discord.gg/p8Dy4sQHaR', '_blank')}
                 className="flex-1 bg-indigo-600 hover:bg-indigo-700"
               >
                 <ExternalLink className="h-4 w-4 mr-2" />

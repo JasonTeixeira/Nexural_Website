@@ -410,7 +410,7 @@ export function HeroSection() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-16">
             {/* Join FREE Community Button */}
-            <a href="https://discord.gg/fTS3Nedk" target="_blank" rel="noopener noreferrer">
+			<a href="https://discord.gg/p8Dy4sQHaR" target="_blank" rel="noopener noreferrer">
               <button className="group relative overflow-hidden bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-lg px-12 py-4 rounded-xl shadow-2xl hover:shadow-cyan-500/25 transform hover:scale-105 transition-all duration-300 ease-out border border-cyan-400/30 hover:border-cyan-300/50">
                 <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />

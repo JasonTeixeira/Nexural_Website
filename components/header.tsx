@@ -147,7 +147,7 @@ export function Header() {
                 Member Login
               </Button>
             </Link>
-            <a href="https://discord.gg/fTS3Nedk" target="_blank" rel="noopener noreferrer">
+            <a href="https://discord.gg/p8Dy4sQHaR" target="_blank" rel="noopener noreferrer">
               <Button 
                 className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium shadow-sm"
               >
@@ -228,7 +228,7 @@ export function Header() {
                       Member Login
                     </Button>
                   </Link>
-                  <a href="https://discord.gg/fTS3Nedk" target="_blank" rel="noopener noreferrer" className="w-full">
+                  <a href="https://discord.gg/p8Dy4sQHaR" target="_blank" rel="noopener noreferrer" className="w-full">
                     <Button 
                       className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-medium shadow-sm"
                     >

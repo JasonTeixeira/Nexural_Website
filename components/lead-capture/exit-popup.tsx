@@ -87,7 +87,7 @@ export function ExitPopup() {
           </div>
 
           <a
-            href="https://discord.gg/fTS3Nedk"
+			href="https://discord.gg/p8Dy4sQHaR"
             target="_blank"
             rel="noopener noreferrer"
             className="block w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-lg py-4 rounded-xl shadow-2xl hover:shadow-cyan-500/50 transform hover:scale-105 transition-all duration-300 mb-3"
