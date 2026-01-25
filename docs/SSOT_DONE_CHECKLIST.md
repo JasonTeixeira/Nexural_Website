@@ -15,10 +15,10 @@ This checklist defines when the SSOT is complete enough to refactor safely witho
 See: `docs/DECISIONS_LOCKED_2026-01-25.md`
 
 ## 2) Architecture and domains defined
-- [ ] Domains and responsibilities are defined (`ARCHITECTURE.md`)
-- [ ] Canonical nouns are defined (`DOMAIN_MODEL.md`)
-- [ ] Permissions/privacy are defined (`PERMISSIONS_PRIVACY.md`)
-- [ ] Event taxonomy is defined (`EVENT_TAXONOMY.md`)
+- [x] Domains and responsibilities are defined (`ARCHITECTURE.md`)
+- [x] Canonical nouns are defined (`DOMAIN_MODEL.md`)
+- [x] Permissions/privacy are defined (`PERMISSIONS_PRIVACY.md`)
+- [x] Event taxonomy is defined (`EVENT_TAXONOMY.md`)
 
 ## 3) Tier‑1 deep specs complete
 - [ ] Trading ledger spec complete (`TRADING_LEDGER_SPEC.md`)

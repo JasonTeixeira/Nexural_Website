@@ -1,5 +1,8 @@
 # Event Taxonomy (SSOT)
 
+> Status: **Final (2026-01-25)**
+> Tie-breaker: `docs/SSOT_DONE_CHECKLIST.md` + `docs/DECISIONS_LOCKED_2026-01-25.md`
+
 Events are the platform spine. They power:
 - feeds
 - alerts/notifications

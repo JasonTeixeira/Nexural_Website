@@ -3,6 +3,9 @@
 This document defines the **canonical nouns** of the platform and how they relate.
 It is architecture-level (no implementation details).
 
+> Status: **Final (2026-01-25)**
+> Tie-breaker: `docs/SSOT_DONE_CHECKLIST.md` + `docs/DECISIONS_LOCKED_2026-01-25.md`
+
 ## 1) Identity & Profiles
 ### User
 - A person who can sign in.

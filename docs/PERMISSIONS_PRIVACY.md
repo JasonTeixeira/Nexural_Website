@@ -1,5 +1,8 @@
 # Permissions & Privacy (SSOT)
 
+> Status: **Final (2026-01-25)**
+> Tie-breaker: `docs/SSOT_DONE_CHECKLIST.md` + `docs/DECISIONS_LOCKED_2026-01-25.md`
+
 ## 1) Roles
 ### Public
 - Not signed in.
@@ -52,11 +55,13 @@ When switching **Private → Public**:
 - backfilled/imported positions remain flagged; leaderboard aging rules still apply
 
 ## 6) Follow-admin requirement
-Onboarding requires every new member to follow the Admin account.
+Onboarding should strongly prompt every new member to follow the Admin account.
 
-Enforcement:
-- Member dashboard shows onboarding gate until admin is followed.
-- Alert subscriptions for “admin trade alerts” require admin follow.
+Enforcement (product decision locked 2026-01-25):
+- **Soft prompt**: follow-admin is recommended but **skip is allowed**.
+- Alert subscriptions for “admin trade alerts” may require admin follow.
+
+See: `docs/DECISIONS_LOCKED_2026-01-25.md`
 
 ## 7) Editing and audit history
 - Positions may be edited.

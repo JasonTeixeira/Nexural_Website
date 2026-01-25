@@ -11,6 +11,9 @@ The architecture must enforce:
 2) **Event-driven product spine** (events power feed, alerts, audits, and leaderboard rollups).
 3) **Explicit permission tiers** (public teaser vs member-only depth).
 
+> Status: **Final (2026-01-25)**
+> Tie-breaker: `docs/SSOT_DONE_CHECKLIST.md` + `docs/DECISIONS_LOCKED_2026-01-25.md`
+
 ## 2) Domains (bounded contexts)
 The system is organized into these domains. Each domain owns its data, APIs, and UI.
 
