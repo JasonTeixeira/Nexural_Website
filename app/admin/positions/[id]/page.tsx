@@ -38,26 +38,13 @@ export default async function PositionDetailPage({ params }: Props) {
     notFound()
   }
 
-  // Fetch targets
-  const { data: targets } = await supabase
-    .from('position_targets')
+  // SSOT stance: per-position audit trail is derived from canonical `position_events`.
+  // We deliberately do NOT read legacy tables like `position_targets`, `stop_loss_history`, `position_activity`.
+  const { data: events } = await supabase
+    .from('position_events')
     .select('*')
     .eq('position_id', id)
-    .order('target_number')
-
-  // Fetch stop loss history
-  const { data: stopHistory } = await supabase
-    .from('stop_loss_history')
-    .select('*')
-    .eq('position_id', id)
-    .order('moved_at', { ascending: false })
-
-  // Fetch activity
-  const { data: activity } = await supabase
-    .from('position_activity')
-    .select('*')
-    .eq('position_id', id)
-    .order('timestamp', { ascending: false })
+    .order('event_date', { ascending: false })
 
   const isOpen = position.status === 'open'
   const pnl = isOpen ? position.unrealized_pnl : position.realized_pnl
@@ -151,11 +138,9 @@ export default async function PositionDetailPage({ params }: Props) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">${position.stop_loss?.toFixed(2)}</div>
-            {stopHistory && stopHistory.length > 0 && (
-              <p className="text-xs text-muted-foreground">
-                Moved {stopHistory.length} time{stopHistory.length > 1 ? 's' : ''}
-              </p>
-            )}
+            <p className="text-xs text-muted-foreground">
+              Stop changes are tracked in the audit trail.
+            </p>
           </CardContent>
         </Card>
 
@@ -306,41 +291,13 @@ export default async function PositionDetailPage({ params }: Props) {
             <CardHeader>
               <CardTitle>Profit Targets</CardTitle>
               <CardDescription>
-                {targets && targets.length > 0 
-                  ? `${targets.length} target${targets.length > 1 ? 's' : ''} set`
-                  : 'No targets set yet'
-                }
+                Targets are managed via the SSOT event spine.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {targets && targets.length > 0 ? (
-                <div className="space-y-4">
-                  {targets.map((target: any) => (
-                    <div key={target.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <div className="font-medium">Target {target.target_number}</div>
-                        <div className="text-sm text-muted-foreground">
-                          ${target.target_price?.toFixed(2)} ({target.percent_allocation}% allocation)
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <Badge variant={target.status === 'hit' ? 'default' : 'outline'}>
-                          {target.status}
-                        </Badge>
-                        {target.r_multiple && (
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {target.r_multiple.toFixed(2)}R
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-center text-muted-foreground py-8">
-                  No targets set. Use the Target Manager to add profit targets.
-                </p>
-              )}
+              <p className="text-center text-muted-foreground py-8">
+                This view is being migrated off legacy targets. Use the audit trail until the new targets UI is rebuilt.
+              </p>
             </CardContent>
           </Card>
         </TabsContent>

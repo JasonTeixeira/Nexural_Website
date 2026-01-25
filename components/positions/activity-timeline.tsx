@@ -38,7 +38,6 @@ interface ActivityEvent {
   timestamp: string
   importance: string
   discord_notified: boolean
-  show_in_timeline: boolean
 }
 
 interface ActivityTimelineProps {
@@ -102,15 +101,29 @@ export function ActivityTimeline({ positionId, ticker }: ActivityTimelineProps) 
     try {
       const supabase = createClient()
       const { data, error } = await supabase
-        .from('position_activity')
-        .select('*')
+        .from('position_events')
+        .select('id,position_id,event_type,event_date,note,price,shares,amendment_class,discord_sent')
         .eq('position_id', positionId)
-        .eq('show_in_timeline', true)
-        .order('timestamp', { ascending: false })
+        .order('event_date', { ascending: false })
 
       if (error) throw error
 
-      setActivities(data || [])
+      const mapped: ActivityEvent[] = (data || []).map((row: any) => {
+        const type = String(row.event_type || '')
+        const category = type.includes('stop') || type.includes('risk') ? 'risk' : type.includes('target') ? 'analysis' : 'trade'
+        const description = row.note || type
+        return {
+          id: row.id,
+          activity_type: type,
+          activity_category: category,
+          description,
+          timestamp: row.event_date,
+          importance: 'normal',
+          discord_notified: Boolean(row.discord_sent),
+        }
+      })
+
+      setActivities(mapped)
     } catch (error) {
       console.error('Error loading activities:', error)
     } finally {
