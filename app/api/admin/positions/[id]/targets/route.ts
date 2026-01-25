@@ -5,7 +5,12 @@ import { createClient } from '@/lib/supabase-client'
  * POST /api/admin/positions/[id]/targets
  * Admin-only: emits target events into the SSOT event spine (`position_events`).
  *
- * This intentionally does NOT rely on legacy `position_targets`.
+ * DB schema alignment:
+ * - position_events.event_type (text)
+ * - position_events.event_data (jsonb)
+ * - position_events.notes (text)
+ * - position_events.created_by (uuid)
+ * - position_events.created_at (timestamptz default now())
  */
 export async function POST(
   request: Request,
@@ -42,25 +47,33 @@ export async function POST(
             ? null
             : Number(t?.allocation_pct),
       }))
-      .filter((t: any) => Number.isFinite(t.n) && t.n >= 1 && t.n <= 4 && Number.isFinite(t.price) && t.price > 0)
+      .filter(
+        (t: any) =>
+          Number.isFinite(t.n) &&
+          t.n >= 1 &&
+          t.n <= 4 &&
+          Number.isFinite(t.price) &&
+          t.price > 0
+      )
 
     if (sanitized.length === 0) {
       return NextResponse.json({ error: 'No valid targets provided' }, { status: 400 })
     }
 
-    const now = new Date().toISOString()
     const inserts = sanitized.map((t: any) => ({
       position_id: params.id,
       event_type: 'position.target_set',
-      event_date: now,
-      note: `Target ${t.n} set: $${t.price}${Number.isFinite(t.allocation_pct) ? ` (${t.allocation_pct}% alloc)` : ''}`,
-      created_by: user.email || null,
-      actor_id: user.id,
-      // Use JSON payload for target metadata (SSOT-friendly, evolvable)
-      diff_summary: JSON.stringify({ target: t }),
+      event_data: { target: t },
+      notes: `Target ${t.n} set: $${t.price}${Number.isFinite(t.allocation_pct) ? ` (${t.allocation_pct}% alloc)` : ''}`,
+      created_by: user.id,
+      // created_at defaults to now()
     }))
 
-    const { data, error } = await supabase.from('position_events').insert(inserts).select('id')
+    const { data, error } = await supabase
+      .from('position_events')
+      .insert(inserts)
+      .select('id')
+
     if (error) {
       console.error('Error writing target events:', error)
       return NextResponse.json({ error: 'Failed to write target events' }, { status: 500 })

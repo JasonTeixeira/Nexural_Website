@@ -69,11 +69,10 @@ export async function POST(
     const { error: evErr } = await supabase.from('position_events').insert({
       position_id: params.id,
       event_type: eventType,
-      event_date: new Date().toISOString(),
-      note: reason ? `Stop updated: ${reason}` : 'Stop updated',
-      created_by: user.email || null,
-      actor_id: user.id,
-      diff_summary: JSON.stringify(payload),
+      event_data: payload,
+      notes: reason ? `Stop updated: ${reason}` : 'Stop updated',
+      created_by: user.id,
+      // created_at defaults to now()
     } as any)
 
     if (evErr) {
