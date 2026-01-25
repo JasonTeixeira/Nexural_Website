@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase-client'
+import { createServiceClient } from '@/lib/supabase/service'
 
 export const dynamic = 'force-dynamic'
 
@@ -48,7 +48,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const supabase = createClient()
+    // Use service role for seeding so inserts work even if RLS is enabled
+    // and to ensure we can write events with created_by.
+    const supabase = createServiceClient()
 
     // Find an admin user id to attribute events to.
     // Prefer ADMIN_USER_ID env, otherwise try to find one in profiles.
