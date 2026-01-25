@@ -15,11 +15,23 @@ export async function GET(req: NextRequest) {
   // Support both header-based auth (API clients) and cookie-based auth (admin UI).
   const authHeader = req.headers.get('authorization')
   const bearer = extractToken(authHeader)
-  const cookieToken = req.cookies.get('admin_token')?.value
-  const token = bearer || cookieToken || null
-  const auth = await requireAdminSession(token)
-  if (!auth.authorized) {
-    return NextResponse.json({ error: auth.error || 'Unauthorized' }, { status: 401 })
+  const adminTokenCookie = req.cookies.get('admin_token')?.value
+
+  // Production admin UI uses httpOnly cookies:
+  // - admin_session = user id
+  // - admin_authenticated = "true"
+  // So we allow access when those cookies are present.
+  const adminSessionCookie = req.cookies.get('admin_session')?.value
+  const adminAuthenticated = req.cookies.get('admin_authenticated')?.value === 'true'
+
+  if (bearer || adminTokenCookie) {
+    const token = bearer || adminTokenCookie || null
+    const auth = await requireAdminSession(token)
+    if (!auth.authorized) {
+      return NextResponse.json({ error: auth.error || 'Unauthorized' }, { status: 401 })
+    }
+  } else if (!(adminAuthenticated && adminSessionCookie)) {
+    return NextResponse.json({ error: 'No token provided' }, { status: 401 })
   }
 
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {

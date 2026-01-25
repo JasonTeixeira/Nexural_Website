@@ -254,13 +254,16 @@ export class ServerSessionService {
   }
 }
 
-// Run cleanup every 5 minutes
-setInterval(() => {
-  const cleaned = ServerSessionService.cleanupExpiredSessions()
-  if (cleaned > 0) {
-    console.log(`Cleaned up ${cleaned} expired sessions`)
-  }
-}, 5 * 60 * 1000)
+// Run cleanup every 5 minutes.
+// In Jest/test environments we skip this to avoid open handles.
+if (process.env.NODE_ENV !== 'test') {
+  setInterval(() => {
+    const cleaned = ServerSessionService.cleanupExpiredSessions()
+    if (cleaned > 0) {
+      console.log(`Cleaned up ${cleaned} expired sessions`)
+    }
+  }, 5 * 60 * 1000)
+}
 
 /**
  * Middleware helper for Next.js API routes
